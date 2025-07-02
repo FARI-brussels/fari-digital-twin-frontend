@@ -1,4 +1,5 @@
 <template>
+
   <div class="asset-library">
     <div v-if="!showUploadPage">
       <div class="header">
@@ -29,8 +30,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import ModelViewer from '../components/ModelViewer.vue';
-import UploadAsset from '../components/UploadAsset.vue';
+import ModelViewer from '../../components/ModelViewer.vue';
+import UploadAsset from '../../components/UploadAsset.vue';
+import LibraryLayout from "../../components/LibraryLayout.vue";
 
 const assets = ref([]);
 const selectedAsset = ref(null);

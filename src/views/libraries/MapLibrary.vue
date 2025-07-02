@@ -32,8 +32,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import UploadMapLayer from '../components/UploadMapLayer.vue';
-import MapViewer from '../components/MapViewer.vue';
+import UploadMapLayer from '../../components/UploadMapLayer.vue';
+import MapViewer from '../../components/MapViewer.vue';
 
 const mapLayers = ref([]);
 const selectedMapLayer = ref(null);

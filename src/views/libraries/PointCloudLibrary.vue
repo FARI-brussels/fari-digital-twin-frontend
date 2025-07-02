@@ -28,8 +28,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import UploadPointCloud from '../components/UploadPointCloud.vue';
-import PointCloudViewer from '../components/PointCloudViewer.vue';
+import UploadPointCloud from '../../components/UploadPointCloud.vue';
+import PointCloudViewer from '../../components/PointCloudViewer.vue';
 
 const pointClouds = ref([]);
 const selectedPointCloud = ref(null);

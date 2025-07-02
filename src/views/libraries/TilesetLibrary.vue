@@ -29,8 +29,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import TilesetViewer from '../components/TilesetViewer.vue';
-import UploadTileset from '../components/UploadTileset.vue';
+import TilesetViewer from '../../components/TilesetViewer.vue';
+import UploadTileset from '../../components/UploadTileset.vue';
 
 const tilesets = ref([]);
 const selectedTileset = ref(null);

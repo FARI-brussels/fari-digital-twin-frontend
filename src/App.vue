@@ -1,18 +1,14 @@
 <template>
-  <div id="app">
-    <nav class="main-nav">
-      <router-link to="/assets">3D Asset Library</router-link>
-      <router-link to="/pointclouds">Point Cloud Library</router-link>
-      <router-link to="/maps">Map Library</router-link>
-      <router-link to="/tilesets">Tileset Library</router-link>
-      <router-link to="/demo">Demo</router-link>
-    </nav>
-    <router-view />
-  </div>
+  <Layout>
+    <main class="w-full">
+      <RouterView/>
+    </main>
+  </Layout>
 </template>
 
 <script setup>
 // This component now only serves as the main layout with navigation.
+import Layout from "./components/Layout.vue";
 </script>
 
 <style>

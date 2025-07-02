@@ -10,15 +10,28 @@
   },
   "dependencies": {
     "@giro3d/giro3d": "^0.43.0",
+    "@tailwindcss/vite": "^4.1.10",
     "axios": "^1.9.0",
     "cesium": "^1.130.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.523.0",
+    "reka-ui": "^2.3.1",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss": "^4.1.10",
     "three": "^0.170.0",
+    "tw-animate-css": "^1.3.4",
     "vite-plugin-cesium": "^1.2.23",
     "vue": "^3.5.13",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@tsconfig/node20": "^20.1.6",
+    "@types/node": "^24.0.4",
     "@vitejs/plugin-vue": "^5.2.3",
-    "vite": "^6.3.5"
+    "@vue/tsconfig": "^0.7.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vue-tsc": "^2.2.10"
   }
 }

@@ -108,14 +108,6 @@ const examples = ref([
         type: 'tileset',
         url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-06-18_20-47-13/tileset.json',
         enabled: true,
-        style: new Cesium.Cesium3DTileStyle({
-          color: {
-            conditions: [
-              ["${TYPE} === 'ROOFSURFACE'", "color('red')"],
-              ["true", "color('white')"],
-            ],
-          },
-        }),
       },
       {
         id: 'trees',

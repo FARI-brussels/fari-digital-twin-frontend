@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AssetLibrary from '../views/libraries/AssetLibrary.vue';
-import PointCloudLibrary from '../views/libraries/PointCloudLibrary.vue';
 import MapLibrary from '../views/libraries/MapLibrary.vue';
 import TilesetLibrary from '../views/libraries/TilesetLibrary.vue';
 import DemoView from '../views/DemoView.vue';
@@ -20,11 +19,6 @@ const routes = [
         path: 'assets',
         name: 'AssetLibrary',
         component: AssetLibrary,
-      },
-      {
-        path: 'pointclouds',
-        name: 'PointCloudLibrary',
-        component: PointCloudLibrary,
       },
       {
         path: 'maps',

@@ -10,7 +10,11 @@ import {Button} from "@/components/ui/button";
 
     </router-link>
     <div class="flex gap-2">
-      <Button variant="link">API doc</Button>
+      <Button variant="link" as-child>
+        <RouterLink to="/doc">
+          API doc
+        </RouterLink>
+      </Button>
       <Button variant="default">Sign in</Button>
     </div>
   </div>

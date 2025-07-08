@@ -6,9 +6,11 @@ import TilesetLibrary from '../views/libraries/TilesetLibrary.vue';
 import DemoView from '../views/DemoView.vue';
 import HomePage from "../views/HomePage.vue";
 import LibraryLayout from "../components/LibraryLayout.vue";
+import ApiDocView from "@/views/ApiDocView.vue";
 
 const routes = [
   { path: '/', name: 'Home', component: HomePage },
+  { path: '/doc', name: 'API Documentation', component: ApiDocView },
 
   {
     path: '/library',

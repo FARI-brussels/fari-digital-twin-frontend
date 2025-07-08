@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "title": "Refactor library components into a reusable LibraryBase.vue component",
+    "description": "Create a reusable LibraryBase.vue component to abstract the common logic from AssetLibrary.vue, MapLibrary.vue, and TilesetLibrary.vue. This component should handle the two-column layout, fetching data, selecting items, deleting items, and showing the upload page. It should use props and slots to manage the differences between the libraries (e.g., API endpoints, rendering of list items, viewer components, code snippets).",
+    "priority": "high",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": 2,
+    "title": "Use Vite's environment variables",
+    "description": "Replace process.env.API_URL with import.meta.env.VITE_API_URL. This requires creating a .env file in the project root.",
+    "priority": "high",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": 3,
+    "title": "Centralize API calls",
+    "description": "Create a dedicated module for API calls (e.g., src/lib/api.js) instead of having axios calls directly in the components. This will make the code cleaner and easier to maintain.",
+    "priority": "medium",
+    "status": "pending",
+    "dependencies": [1]
+  },
+  {
+    "id": 4,
+    "title": "Component-scoped styles",
+    "description": "Move global styles from App.vue into their respective components and scope them. This will prevent style conflicts and make components more self-contained.",
+    "priority": "medium",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": 5,
+    "title": "Consistent import aliases",
+    "description": "Use the @ alias consistently for imports from the src directory.",
+    "priority": "low",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": 6,
+    "title": "Consistent quote usage",
+    "description": "Enforce a consistent style for quotes (e.g., single quotes). A linter like ESLint with a code formatter like Prettier would be perfect for this.",
+    "priority": "low",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": 7,
+    "title": "Implement or remove the 'Sign in' button",
+    "description": "The 'Sign in' button in the header is currently not implemented. Decide whether to implement the functionality or remove the button.",
+    "priority": "low",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": 8,
+    "title": "Externalize code snippets",
+    "description": "Move the hardcoded code snippets from the library components into separate files or a more structured format to improve readability and maintainability.",
+    "priority": "low",
+    "status": "pending",
+    "dependencies": [1]
+  }
+] 

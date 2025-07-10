@@ -28,7 +28,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import { postItem } from '@/lib/api';
 
 const emit = defineEmits(['uploaded', 'cancel']);
 
@@ -46,7 +46,7 @@ const addLayer = async () => {
   submitting.value = true;
 
   try {
-    await axios.post(import.meta.env.VITE_BACKEND_URL + '/maps-manager/add_layer', {
+    await postItem('/maps-manager/add_layer', {
       layer: {
         url: url.value,
         layer: layer.value,

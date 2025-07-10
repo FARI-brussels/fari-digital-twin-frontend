@@ -24,7 +24,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import { uploadItem } from '@/lib/api';
 
 const emit = defineEmits(['uploaded', 'cancel']);
 
@@ -55,11 +55,7 @@ const uploadAsset = async () => {
   uploading.value = true;
 
   try {
-    await axios.post(import.meta.env.VITE_BACKEND_URL + '/assets-manager/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+    await uploadItem('/assets-manager/upload', formData);
     successMessage.value = 'Asset uploaded successfully!';
     description.value = '';
     // Reset file input if possible (or just the ref)

@@ -24,7 +24,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import { uploadItem } from '@/lib/api';
 
 const emit = defineEmits(['uploaded', 'cancel']);
 
@@ -55,11 +55,7 @@ const uploadTileset = async () => {
   uploading.value = true;
 
   try {
-    await axios.post(import.meta.env.VITE_BACKEND_URL + '/tileset-manager/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+    await uploadItem('/tileset-manager/upload', formData);
     successMessage.value = 'Tileset uploaded successfully!';
     description.value = '';
     // Reset file input if possible (or just the ref)

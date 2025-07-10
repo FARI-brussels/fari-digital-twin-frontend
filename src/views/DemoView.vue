@@ -72,7 +72,7 @@ const examples = ref([
         id: 'trees',
         name: 'Tree Tileset',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-06-20_09-32-51/tiles/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-07-10_14-31-18/tiles/tileset.json',
         enabled: true,
       },
       {
@@ -113,7 +113,14 @@ const examples = ref([
         id: 'trees',
         name: 'Tree Tileset',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-06-20_09-32-51/tiles/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-07-10_14-31-18/tiles/tileset.json',
+        enabled: true,
+      },
+      {
+        id: 'trees_jette',
+        name: 'Tree Tileset Jette',
+        type: 'tileset',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-07-10_14-26-56/tiles/tileset.json',
         enabled: true,
       },
       {

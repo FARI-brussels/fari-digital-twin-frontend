@@ -46,7 +46,7 @@ const addLayer = async () => {
   submitting.value = true;
 
   try {
-    await axios.post(process.env.API_URL + '/maps-manager/add_layer', {
+    await axios.post(import.meta.env.VITE_BACKEND_URL + '/maps-manager/add_layer', {
       layer: {
         url: url.value,
         layer: layer.value,

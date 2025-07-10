@@ -55,7 +55,7 @@ const uploadAsset = async () => {
   uploading.value = true;
 
   try {
-    await axios.post(process.env.API_URL + '/assets-manager/upload', formData, {
+    await axios.post(import.meta.env.VITE_BACKEND_URL + '/assets-manager/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

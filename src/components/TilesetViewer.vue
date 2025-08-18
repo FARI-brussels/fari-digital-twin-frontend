@@ -1,6 +1,16 @@
 <template>
   <div class="tileset-viewer-wrapper">
       <div ref="viewerContainer" class="viewer-container"></div>
+      <div class="controls-overlay">
+        <label class="wms-toggle">
+          <input 
+            type="checkbox" 
+            v-model="showWmsLayer" 
+            @change="toggleWmsLayer"
+          />
+          <span>UrbIS Base Map</span>
+        </label>
+      </div>
       <div v-if="loading" class="loading-indicator">Loading Tileset...</div>
       <div v-if="error" class="error-message">{{ error }}</div>
   </div>
@@ -21,11 +31,16 @@ const props = defineProps({
 const viewerContainer = ref(null);
 const loading = ref(true);
 const error = ref(null);
+const showWmsLayer = ref(true);
 let viewer;
 let currentTileset = null;
+let wmsImageryLayer = null;
 
 const initializeViewer = () => {
   if (viewerContainer.value && !viewer) {
+    // Set Cesium Ion access token
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhY2E3ZDhlNC03Yjc0LTQzM2QtYmI5My0zYWQ3NjIwOTk0OTciLCJpZCI6Mjc4NzM4LCJpYXQiOjE3NDA0ODg1MjB9.VsZjL6pbKSwR_SBbxUq-KRweOU_P3R8DKjSpeD0EICY';
+    
     viewer = new Cesium.Viewer(viewerContainer.value, {
       timeline: false,
       animation: false,
@@ -35,11 +50,55 @@ const initializeViewer = () => {
       sceneModePicker: false,
       navigationHelpButton: false,
       infoBox: false,
-      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
       imageryProvider: new Cesium.OpenStreetMapImageryProvider({
         url: 'https://a.tile.openstreetmap.org/'
       }),
     });
+    
+    // Set terrain using the scene method
+    viewer.scene.setTerrain(
+      new Cesium.Terrain(
+        Cesium.CesiumTerrainProvider.fromIonAssetId(3340034),
+      ),
+    );
+    
+    // Add WMS layer by default
+    addWmsLayer();
+  }
+};
+
+const addWmsLayer = () => {
+  if (!viewer || wmsImageryLayer) return;
+  
+  try {
+    const wmsProvider = new Cesium.WebMapServiceImageryProvider({
+      url: 'https://geoservices-urbis.irisnet.be/geoserver/ows',
+      layers: 'BaseMaps:UrbISNotLabeledColor',
+      parameters: {
+        service: 'WMS',
+        format: 'image/png',
+        transparent: true,
+      }
+    });
+    
+    wmsImageryLayer = viewer.imageryLayers.addImageryProvider(wmsProvider);
+  } catch (err) {
+    console.error('Failed to add WMS layer:', err);
+  }
+};
+
+const removeWmsLayer = () => {
+  if (viewer && wmsImageryLayer) {
+    viewer.imageryLayers.remove(wmsImageryLayer);
+    wmsImageryLayer = null;
+  }
+};
+
+const toggleWmsLayer = () => {
+  if (showWmsLayer.value) {
+    addWmsLayer();
+  } else {
+    removeWmsLayer();
   }
 };
 
@@ -94,10 +153,40 @@ onBeforeUnmount(() => {
   position: relative;
   background-color: #000;
 }
+
 .viewer-container {
   width: 100%;
   height: 100%;
 }
+
+.controls-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.wms-toggle {
+  display: flex;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wms-toggle input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.wms-toggle span {
+  cursor: pointer;
+}
+
 .loading-indicator, .error-message {
   position: absolute;
   top: 50%;
@@ -109,6 +198,7 @@ onBeforeUnmount(() => {
   border-radius: 5px;
   z-index: 10;
 }
+
 .error-message {
   color: #ffcccc;
 }

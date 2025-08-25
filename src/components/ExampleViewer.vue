@@ -2,55 +2,54 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content">
       <button class="close-button" @click="$emit('close')">&times;</button>
-      <div class="cesium-container" ref="cesiumContainer" />
-
+      <div class="cesium-container" ref="cesiumContainer"></div>
       <div v-if="loading" class="loading-indicator">Loading Example...</div>
       <div v-if="error" class="error-message">{{ error }}</div>
-
       <div class="sidebar">
         <h3>{{ example.name }}</h3>
         <p class="example-description">{{ example.description }}</p>
-
         <div class="layer-list">
           <h4>Active Layers:</h4>
-
-          <div 
-            v-for="layer in activeLayers" 
-            :key="layer.id" 
-            class="layer-item"
-          >
+          <div v-for="layer in activeLayers" :key="layer.id" class="layer-item">
             <span class="layer-name">{{ layer.name }}</span>
             <span class="layer-type">({{ layer.type }})</span>
           </div>
-
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 
-const props = defineProps({
-  example: {
-    type: Object,
-    required: true,
-  },
-})
+interface LayerBase { id: string; name: string; enabled: boolean; type: string }
+
+type ExampleLayer =
+  | (LayerBase & { type: 'basemap' })
+  | (LayerBase & { type: 'tileset'; url: string; style?: any })
+  | (LayerBase & { type: 'wms'; url: string; layer: string })
+
+interface ExampleData {
+  name: string
+  description: string
+  layers: ExampleLayer[]
+}
+
+const props = defineProps<{ example: ExampleData }>()
 
 defineEmits(['close'])
 
-const cesiumContainer = ref(null)
+const cesiumContainer = ref<HTMLDivElement | null>(null)
 const loading = ref(true)
-const error = ref(null)
-let viewer
+const error = ref<string | null>(null)
+let viewer: Cesium.Viewer | null
 
-const activeLayers = computed(() => 
-  props.example.layers.filter((layer) => layer.enabled)
-)
+const activeLayers = computed(() => {
+  return props.example.layers.filter((layer) => layer.enabled)
+})
 
 onMounted(async () => {
   if (!cesiumContainer.value) return
@@ -86,29 +85,28 @@ onMounted(async () => {
     // Load tilesets
     const tilesetLayers = props.example.layers.filter(
       (layer) => layer.type === 'tileset' && layer.enabled
-    )
+    ) as Array<Extract<ExampleLayer, { type: 'tileset' }>>
     if (tilesetLayers.length > 0) {
       const promises = tilesetLayers.map((layer) => Cesium.Cesium3DTileset.fromUrl(layer.url))
       const loadedTilesets = await Promise.all(promises)
 
       loadedTilesets.forEach((loadedTs, index) => {
         const layerInfo = tilesetLayers[index]
-        viewer.scene.primitives.add(loadedTs)
-
-        if (layerInfo.style) 
+        viewer!.scene.primitives.add(loadedTs)
+        if (layerInfo.style) {
           loadedTs.style = layerInfo.style
-        
+        }
       })
 
-      if (loadedTilesets.length > 0) 
+      if (loadedTilesets.length > 0) {
         await viewer.zoomTo(loadedTilesets[0])
-      
+      }
     }
 
     // Add WMS layers
-    const wmsLayers = props.example.layers.filter((layer) => layer.type === 'wms' && layer.enabled)
+    const wmsLayers = props.example.layers.filter((layer) => layer.type === 'wms' && layer.enabled) as Array<Extract<ExampleLayer, { type: 'wms' }>>
     wmsLayers.forEach((layer) => {
-      viewer.imageryLayers.addImageryProvider(
+      viewer!.imageryLayers.addImageryProvider(
         new Cesium.WebMapServiceImageryProvider({
           url: layer.url,
           layers: layer.layer,
@@ -122,10 +120,9 @@ onMounted(async () => {
     })
 
     // Add click handler for 3D features
-    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
-
+    const handler = new Cesium.ScreenSpaceEventHandler((viewer as Cesium.Viewer).scene.canvas)
     handler.setInputAction((movement) => {
-      const feature = viewer.scene.pick(movement.position)
+      const feature = (viewer as Cesium.Viewer).scene.pick(movement.position)
       if (feature instanceof Cesium.Cesium3DTileFeature) {
         const propertyNames = feature.getPropertyNames()
         let description = '<table class="cesium-infoBox-defaultTable"><tbody>'
@@ -136,7 +133,7 @@ onMounted(async () => {
         }
         description += '</tbody></table>'
 
-        viewer.selectedEntity = new Cesium.Entity({
+        ;(viewer as Cesium.Viewer).selectedEntity = new Cesium.Entity({
           name: 'Feature Properties',
           description: description,
         })

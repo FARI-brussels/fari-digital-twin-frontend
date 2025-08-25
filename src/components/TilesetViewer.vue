@@ -1,28 +1,23 @@
 <template>
   <div class="tileset-viewer-wrapper">
-      <div ref="viewerContainer" class="viewer-container"></div>
-      <div v-if="loading" class="loading-indicator">Loading Tileset...</div>
-      <div v-if="error" class="error-message">{{ error }}</div>
+    <div ref="viewerContainer" class="viewer-container"></div>
+    <div v-if="loading" class="loading-indicator">Loading Tileset...</div>
+    <div v-if="error" class="error-message">{{ error }}</div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import * as Cesium from 'cesium';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import * as Cesium from 'cesium'
+import 'cesium/Build/Cesium/Widgets/widgets.css'
 
-const props = defineProps({
-  tilesetUrl: {
-    type: String,
-    required: true,
-  },
-});
+const props = defineProps<{ tilesetUrl: string }>()
 
-const viewerContainer = ref(null);
-const loading = ref(true);
-const error = ref(null);
-let viewer;
-let currentTileset = null;
+const viewerContainer = ref<HTMLDivElement | null>(null)
+const loading = ref(true)
+const error = ref<string | null>(null)
+let viewer: Cesium.Viewer | null
+let currentTileset: Cesium.Cesium3DTileset | null = null
 
 const initializeViewer = () => {
   if (viewerContainer.value && !viewer) {
@@ -36,55 +31,59 @@ const initializeViewer = () => {
       navigationHelpButton: false,
       infoBox: false,
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/'
-      }),
-    });
+    })
+    const imageryProvider = new Cesium.OpenStreetMapImageryProvider({
+      url: 'https://a.tile.openstreetmap.org/',
+    })
+    viewer.imageryLayers.removeAll()
+    viewer.imageryLayers.addImageryProvider(imageryProvider)
   }
-};
+}
 
-const loadTileset = async (url) => {
-  if (!viewer || !url) return;
+const loadTileset = async (url: string) => {
+  if (!viewer || !url) return
 
-  loading.value = true;
-  error.value = null;
+  loading.value = true
+  error.value = null
 
   try {
     if (currentTileset) {
-      viewer.scene.primitives.remove(currentTileset);
+      viewer.scene.primitives.remove(currentTileset)
     }
-    
-    const tileset = await Cesium.Cesium3DTileset.fromUrl(url);
-    currentTileset = viewer.scene.primitives.add(tileset);
 
-    await viewer.zoomTo(tileset);
+    const tileset = await Cesium.Cesium3DTileset.fromUrl(url)
+    currentTileset = viewer.scene.primitives.add(tileset)
 
+    await viewer.zoomTo(tileset)
   } catch (err) {
-    console.error('Failed to load tileset:', err);
-    error.value = 'Error loading tileset. The URL might be invalid or inaccessible.';
+    console.error('Failed to load tileset:', err)
+    error.value = 'Error loading tileset. The URL might be invalid or inaccessible.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-watch(() => props.tilesetUrl, (newUrl) => {
-  loadTileset(newUrl);
-}, { immediate: true });
+watch(
+  () => props.tilesetUrl,
+  (newUrl) => {
+    loadTileset(newUrl)
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
-  initializeViewer();
+  initializeViewer()
   if (props.tilesetUrl) {
-    loadTileset(props.tilesetUrl);
+    loadTileset(props.tilesetUrl)
   }
-});
+})
 
 onBeforeUnmount(() => {
   if (viewer) {
-    viewer.destroy();
-    viewer = null;
+    viewer.destroy()
+    viewer = null
   }
-});
-
+})
 </script>
 
 <style scoped>
@@ -98,13 +97,14 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
 }
-.loading-indicator, .error-message {
+.loading-indicator,
+.error-message {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  background-color: rgba(0,0,0,0.8);
+  background-color: rgba(0, 0, 0, 0.8);
   padding: 15px;
   border-radius: 5px;
   z-index: 10;
@@ -112,4 +112,4 @@ onBeforeUnmount(() => {
 .error-message {
   color: #ffcccc;
 }
-</style> 
+</style>

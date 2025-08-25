@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue'
 
 onMounted(() => {
@@ -21,10 +21,14 @@ onMounted(() => {
 
   function renderRedoc() {
     // URL vers ton fichier OpenAPI/Swagger (YAML ou JSON)
-    window.Redoc.init('/openapi.yaml', {
-      scrollYOffset: 50,
-      hideDownloadButton: true
-    }, document.getElementById('redoc-container'))
+    window.Redoc.init(
+      '/openapi.yaml',
+      {
+        scrollYOffset: 50,
+        hideDownloadButton: true,
+      },
+      document.getElementById('redoc-container') as HTMLElement
+    )
   }
 })
 </script>

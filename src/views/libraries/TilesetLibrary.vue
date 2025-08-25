@@ -9,12 +9,13 @@
     :codeSnippets="codeSnippets"
     :transformData="transformTilesetData"
   >
+    <!-- @vue-ignore: slot type inference for generic LibraryBase -->
     <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
       <li
         v-for="item in items"
         :key="item.url"
         class="item"
-        :class="{ 'selected': selectedItem && selectedItem.url === item.url }"
+        :class="{ selected: selectedItem && selectedItem.url === item.url }"
         @click="selectItem(item)"
       >
         <div class="item-info">
@@ -26,19 +27,25 @@
   </LibraryBase>
 </template>
 
-<script setup>
-import LibraryBase from '../../components/LibraryBase.vue';
-import TilesetViewer from '../../components/TilesetViewer.vue';
-import UploadTileset from '../../components/UploadTileset.vue';
+<script setup lang="ts">
+import LibraryBase from '../../components/LibraryBase.vue'
+import TilesetViewer from '../../components/TilesetViewer.vue'
+import UploadTileset from '../../components/UploadTileset.vue'
 
-const transformTilesetData = (data) => {
-  return data.map(tileset => ({
+interface TilesetItem {
+  url: string
+  description?: string
+}
+
+const transformTilesetData = (data: TilesetItem[]): TilesetItem[] => {
+  return data.map((tileset) => ({
     ...tileset,
-    description: tileset.description || 'No description'
-  }));
-};
+    description: tileset.description || 'No description',
+  }))
+}
 
-const getCesiumJsSnippet = (tileset) => `
+const getCesiumJsSnippet = (tileset: TilesetItem) =>
+  `
 import { Cesium3DTileset } from 'cesium';
 try {
     const tileset = await Cesium3DTileset.fromUrl(
@@ -49,9 +56,10 @@ try {
 } catch (error) {
     console.error(\`Error loading tileset: \${error}\`);
 }
-`.trim();
+`.trim()
 
-const getCesiumUnitySnippet = (tileset) => `
+const getCesiumUnitySnippet = (tileset: TilesetItem) =>
+  `
 using UnityEngine;
 using CesiumForUnity;
 public class AddTilesetFromUrl : MonoBehaviour
@@ -62,12 +70,12 @@ public class AddTilesetFromUrl : MonoBehaviour
         tileset.url = "${tileset.url}";
     }
 }
-`.trim();
+`.trim()
 
 const codeSnippets = {
   js: getCesiumJsSnippet,
   unity: getCesiumUnitySnippet,
-};
+}
 </script>
 
 <style scoped>
@@ -99,4 +107,4 @@ const codeSnippets = {
 .delete-btn:hover {
   background-color: #cc0000;
 }
-</style> 
+</style>

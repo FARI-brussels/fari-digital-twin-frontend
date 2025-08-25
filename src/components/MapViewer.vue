@@ -1,43 +1,36 @@
 <template>
   <div class="map-viewer-wrapper">
-      <div ref="cesiumContainer" class="viewer-container"></div>
-      <div v-if="legendUrl" class="legend-container">
-        <img :src="legendUrl" alt="Map Legend" />
+    <div ref="cesiumContainer" class="viewer-container"></div>
+    <div v-if="legendUrl" class="legend-container">
+      <img :src="legendUrl" alt="Map Legend" />
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
-import * as Cesium from 'cesium';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+import * as Cesium from 'cesium'
+import 'cesium/Build/Cesium/Widgets/widgets.css'
 
-const props = defineProps({
-  mapLayer: {
-    type: Object,
-    required: true,
-  },
-});
+interface MapLayer { url: string; layer: string; description?: string }
+const props = defineProps<{ mapLayer: MapLayer }>()
 
-const cesiumContainer = ref(null);
-let viewer;
-let currentImageryLayer = null;
+const cesiumContainer = ref<HTMLDivElement | null>(null)
+let viewer: Cesium.Viewer | null
+let currentImageryLayer: Cesium.ImageryLayer | null = null
 
 const legendUrl = computed(() => {
-  const layerInfo = props.mapLayer;
+  const layerInfo = props.mapLayer
   if (layerInfo && layerInfo.url && layerInfo.layer) {
-    const baseUrl = layerInfo.url.split('?')[0];
-    return `${baseUrl}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=${layerInfo.layer}`;
+    const baseUrl = layerInfo.url.split('?')[0]
+    return `${baseUrl}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=${layerInfo.layer}`
   }
-  return '';
-});
+  return ''
+})
 
 const initializeViewer = () => {
   if (cesiumContainer.value && !viewer) {
     viewer = new Cesium.Viewer(cesiumContainer.value, {
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/'
-      }),
       sceneMode: Cesium.SceneMode.SCENE2D,
       baseLayerPicker: false,
       timeline: false,
@@ -46,51 +39,59 @@ const initializeViewer = () => {
       homeButton: false,
       sceneModePicker: false,
       navigationHelpButton: false,
-    });
+    })
+
+    const imageryProvider = new Cesium.OpenStreetMapImageryProvider({
+      url: 'https://tile.openstreetmap.org/',
+    })
+    viewer.imageryLayers.removeAll()
+    viewer.imageryLayers.addImageryProvider(imageryProvider)
 
     viewer.camera.setView({
-      destination: Cesium.Rectangle.fromDegrees(4.25, 50.75, 4.45, 50.95)
-    });
+      destination: Cesium.Rectangle.fromDegrees(4.25, 50.75, 4.45, 50.95),
+    })
   }
-};
+}
 
-const updateMapLayer = (newMapLayer) => {
+const updateMapLayer = (newMapLayer: MapLayer) => {
   if (viewer && newMapLayer && newMapLayer.url && newMapLayer.layer) {
     if (currentImageryLayer) {
-      viewer.imageryLayers.remove(currentImageryLayer, false);
+      viewer.imageryLayers.remove(currentImageryLayer, false)
     }
-    
+
     currentImageryLayer = viewer.imageryLayers.addImageryProvider(
-        new Cesium.WebMapServiceImageryProvider({
+      new Cesium.WebMapServiceImageryProvider({
         url: newMapLayer.url,
         layers: newMapLayer.layer,
-          parameters: {
-            service: 'WMS',
-            transparent: true,
-            format: 'image/png'
-          },
-        })
-      );
-    }
-};
+        parameters: {
+          service: 'WMS',
+          transparent: true,
+          format: 'image/png',
+        },
+      })
+    )
+  }
+}
 
-watch(() => props.mapLayer, (newMapLayer) => {
-  updateMapLayer(newMapLayer);
-}, { immediate: true });
-
+watch(
+  () => props.mapLayer,
+  (newMapLayer) => {
+    updateMapLayer(newMapLayer)
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
-  initializeViewer();
-  updateMapLayer(props.mapLayer);
-});
+  initializeViewer()
+  updateMapLayer(props.mapLayer)
+})
 
 onBeforeUnmount(() => {
   if (viewer) {
-    viewer.destroy();
-    viewer = null;
+    viewer.destroy()
+    viewer = null
   }
-});
-
+})
 </script>
 
 <style scoped>
@@ -118,4 +119,4 @@ onBeforeUnmount(() => {
   max-height: 300px;
   display: block;
 }
-</style> 
+</style>

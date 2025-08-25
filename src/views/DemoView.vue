@@ -4,7 +4,7 @@
       <h1>Demo Examples Gallery</h1>
       <p class="subtitle">Explore different combinations of 3D tilesets and map layers</p>
     </div>
-    
+
     <div class="examples-grid">
       <div v-for="example in examples" :key="example.id" class="example-card">
         <div class="example-preview">
@@ -16,36 +16,55 @@
           <h3>{{ example.name }}</h3>
           <p class="example-description">{{ example.description }}</p>
           <div class="layer-tags">
-            <span v-for="layer in example.layers.filter(l => l.enabled)" :key="layer.id" 
-                  class="layer-tag" :class="layer.type">
+            <span
+              v-for="layer in example.layers.filter((l) => l.enabled)"
+              :key="layer.id"
+              class="layer-tag"
+              :class="layer.type"
+            >
               {{ layer.name }}
             </span>
           </div>
         </div>
         <div class="example-actions">
-          <button @click="openExample(example)" class="view-button">
-            View Example
-          </button>
+          <button @click="openExample(example)" class="view-button">View Example</button>
         </div>
       </div>
     </div>
 
-    <ExampleViewer v-if="selectedExample" :example="selectedExample" @close="selectedExample = null" />
+    <ExampleViewer
+      v-if="selectedExample"
+      :example="selectedExample"
+      @close="selectedExample = null"
+    />
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import * as Cesium from 'cesium';
-import ExampleViewer from '../components/ExampleViewer.vue';
+<script setup lang="ts">
+import { ref } from 'vue'
+import * as Cesium from 'cesium'
+import ExampleViewer from '../components/ExampleViewer.vue'
 
-const selectedExample = ref(null);
+type Layer =
+  | { id: string; name: string; type: 'basemap'; enabled: boolean }
+  | { id: string; name: string; type: 'tileset'; url: string; enabled: boolean; style?: any }
+  | { id: string; name: string; type: 'wms'; url: string; layer: string; enabled: boolean }
 
-const examples = ref([
+interface Example {
+  id: string
+  name: string
+  description: string
+  layers: Layer[]
+}
+
+const selectedExample = ref<Example | null>(null)
+
+const examples = ref<Example[]>([
   {
     id: 'complete-city',
     name: 'Complete Smart City',
-    description: 'A comprehensive view of the smart city including buildings, urban infrastructure, and environmental assets. Features all available 3D tilesets with interactive building information.',
+    description:
+      'A comprehensive view of the smart city including buildings, urban infrastructure, and environmental assets. Features all available 3D tilesets with interactive building information.',
     layers: [
       {
         id: 'basemap',
@@ -63,7 +82,7 @@ const examples = ref([
           color: {
             conditions: [
               ["${TYPE} === 'ROOFSURFACE'", "color('red')"],
-              ["true", "color('white')"],
+              ['true', "color('white')"],
             ],
           },
         }),
@@ -94,7 +113,8 @@ const examples = ref([
   {
     id: 'urban-heat-analysis',
     name: 'Urban Heat Island Analysis',
-    description: 'Visualize urban heat islands overlaid on buildings and vegetation. This example combines 3D city assets with environmental data to analyze heat distribution patterns.',
+    description:
+      'Visualize urban heat islands overlaid on buildings and vegetation. This example combines 3D city assets with environmental data to analyze heat distribution patterns.',
     layers: [
       {
         id: 'basemap',
@@ -133,11 +153,11 @@ const examples = ref([
       },
     ],
   },
-]);
+])
 
-const openExample = (example) => {
-  selectedExample.value = example;
-};
+const openExample = (example: Example) => {
+  selectedExample.value = example
+}
 </script>
 
 <style scoped>
@@ -176,7 +196,9 @@ const openExample = (example) => {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .example-card:hover {
@@ -276,13 +298,13 @@ const openExample = (example) => {
   .examples-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .header h1 {
     font-size: 2em;
   }
-  
+
   .demo-gallery {
     padding: 15px;
   }
 }
-</style> 
+</style>

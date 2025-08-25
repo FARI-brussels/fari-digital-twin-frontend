@@ -7,8 +7,7 @@
   </nav>
   <router-view />
 </template>
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 <style scoped>
 .main-nav {
   background-color: #333;
@@ -16,7 +15,7 @@
   display: flex;
   justify-content: center;
   gap: 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .main-nav a {

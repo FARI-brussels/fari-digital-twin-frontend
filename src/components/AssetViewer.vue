@@ -1,28 +1,23 @@
 <template>
   <div class="asset-viewer-wrapper">
-    <div ref="viewerContainer" class="viewer-container"></div>
+    <div ref="viewerContainer" class="viewer-container" />
     <div v-if="loading" class="loading-indicator">Loading Asset...</div>
     <div v-if="error" class="error-message">{{ error }}</div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-const props = defineProps({
-  assetUrl: {
-    type: String,
-    required: true,
-  },
-});
+const props = defineProps<{ assetUrl: string }>();
 
-const viewerContainer = ref(null);
+const viewerContainer = ref<HTMLDivElement | null>(null);
 const loading = ref(true);
-const error = ref(null);
-let viewer;
-let currentEntity = null;
+const error = ref<string | null>(null);
+let viewer: Cesium.Viewer | null;
+let currentEntity: Cesium.Entity | null = null;
 
 // Default position to place the model (e.g., somewhere in Brussels)
 const defaultPosition = Cesium.Cartesian3.fromDegrees(4.3517, 50.8503, 0);
@@ -39,10 +34,14 @@ const initializeViewer = () => {
       navigationHelpButton: false,
       infoBox: false,
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/'
-      }),
     });
+
+    // Set imagery provider after construction to satisfy types
+    const imageryProvider = new Cesium.OpenStreetMapImageryProvider({
+      url: 'https://a.tile.openstreetmap.org/'
+    })
+    viewer.imageryLayers.removeAll()
+    viewer.imageryLayers.addImageryProvider(imageryProvider)
 
     // Adjust camera to look at the default position
     viewer.camera.lookAt(defaultPosition, new Cesium.HeadingPitchRange(
@@ -53,7 +52,7 @@ const initializeViewer = () => {
   }
 };
 
-const loadModel = async (url) => {
+const loadModel = async (url: string) => {
   if (!viewer || !url) return;
 
   loading.value = true;
@@ -90,25 +89,20 @@ const loadModel = async (url) => {
 };
 
 watch(() => props.assetUrl, (newUrl) => {
-  if (viewer && newUrl) {
-    loadModel(newUrl);
-  }
-}, { immediate: false }); // Set immediate to false to avoid loading before viewer is ready on mount
+    if (viewer && newUrl) loadModel(newUrl);
+}); 
 
 onMounted(() => {
   nextTick(() => {
     initializeViewer();
-    if (props.assetUrl) {
-      loadModel(props.assetUrl);
-    }
-  });
+    if (props.assetUrl) loadModel(props.assetUrl);
+  })
 });
 
 onBeforeUnmount(() => {
   if (viewer) {
-    if(currentEntity) {
-        viewer.entities.remove(currentEntity);
-    }
+    if(currentEntity) viewer.entities.remove(currentEntity);
+    
     viewer.destroy();
     viewer = null;
   }

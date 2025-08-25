@@ -1,3 +1,15 @@
+<template>
+  <Primitive
+    data-slot="button"
+    :as="as"
+    :as-child="asChild"
+    :class="cn(buttonVariants({ variant, size }), props.class)"
+    class="hover:cursor-pointer"
+  >
+    <slot />
+  </Primitive>
+</template>
+
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { Primitive, type PrimitiveProps } from 'reka-ui'
@@ -14,15 +26,3 @@ const props = withDefaults(defineProps<Props>(), {
   as: 'button',
 })
 </script>
-
-<template>
-  <Primitive
-    data-slot="button"
-    :as="as"
-    :as-child="asChild"
-    :class="cn(buttonVariants({ variant, size }), props.class)"
-    class="hover:cursor-pointer"
-  >
-    <slot />
-  </Primitive>
-</template>

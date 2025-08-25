@@ -9,58 +9,69 @@
     :deleteItem="deleteMapLayer"
   >
     <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
-       <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="provider-group">
-          <h2 class="provider-name">{{ provider }}</h2>
-          <ul class="asset-list">
-            <li
-              v-for="layer in layers"
-              :key="layer.layer"
-              class="asset-item"
-              :class="{ 'selected': selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url }"
-              @click="selectItem(layer)"
-            >
-              <div class="layer-info">
-                <span class="layer-description">{{ layer.description }}</span>
-              </div>
-              <button @click.stop="deleteItem(layer)" class="delete-btn">Delete</button>
-            </li>
-          </ul>
-        </div>
+      <div
+        v-for="(layers, provider) in groupedLayers(items)"
+        :key="provider"
+        class="provider-group"
+      >
+        <h2 class="provider-name">{{ provider }}</h2>
+        <ul class="asset-list">
+          <li
+            v-for="layer in layers"
+            :key="layer.layer"
+            class="asset-item"
+            :class="{
+              selected:
+                selectedItem &&
+                selectedItem.layer === layer.layer &&
+                selectedItem.url === layer.url,
+            }"
+            @click="selectItem(layer)"
+          >
+            <div class="layer-info">
+              <span class="layer-description">{{ layer.description }}</span>
+            </div>
+            <button @click.stop="deleteItem(layer)" class="delete-btn">Delete</button>
+          </li>
+        </ul>
+      </div>
     </template>
   </LibraryBase>
 </template>
 
-<script setup>
-import { computed } from 'vue';
-import { deleteMapLayer as apiDeleteMapLayer } from '@/lib/api';
-import LibraryBase from '@/components/LibraryBase.vue';
-import MapViewer from '@/components/MapViewer.vue';
-import UploadMapLayer from '@/components/UploadMapLayer.vue';
+<script setup lang="ts">
+import { deleteMapLayerByUrlAndName } from '@/lib/services/maps'
+import LibraryBase from '@/components/LibraryBase.vue'
+import MapViewer from '@/components/MapViewer.vue'
+import UploadMapLayer from '@/components/UploadMapLayer.vue'
 
-const groupedLayers = (layers) => {
+interface MapLayer { url: string; layer: string; description?: string }
+
+const groupedLayers = (layers: MapLayer[]) => {
   if (!Array.isArray(layers)) {
-    return {};
+    return {}
   }
   return layers.reduce((acc, layer) => {
-    const provider = layer.url;
+    const provider = layer.url
     if (!acc[provider]) {
-      acc[provider] = [];
+      acc[provider] = []
     }
-    acc[provider].push(layer);
-    return acc;
-  }, {});
-};
+    acc[provider].push(layer)
+    return acc
+  }, {} as Record<string, MapLayer[]>)
+}
 
-const deleteMapLayer = async (layer) => {
+const deleteMapLayer = async (layer: MapLayer) => {
   try {
-    await apiDeleteMapLayer(layer);
+    await deleteMapLayerByUrlAndName(layer.url, layer.layer)
   } catch (err) {
-    console.error('Error deleting map layer:', err);
+    console.error('Error deleting map layer:', err)
     // You should probably show an error message to the user
   }
-};
+}
 
-const getCesiumJsSnippet = (layer) => `
+const getCesiumJsSnippet = (layer: MapLayer) =>
+  `
 import { Viewer, WebMapServiceImageryProvider } from 'cesium';
 const viewer = new Viewer('cesiumContainer');
 const wmsProvider = new WebMapServiceImageryProvider({
@@ -72,9 +83,10 @@ const wmsProvider = new WebMapServiceImageryProvider({
     }
 });
 viewer.imageryLayers.addImageryProvider(wmsProvider);
-`.trim();
+`.trim()
 
-const getCesiumUnitySnippet = (layer) => `
+const getCesiumUnitySnippet = (layer: MapLayer) =>
+  `
 using UnityEngine;
 using CesiumForUnity;
 public class AddWmsLayer : MonoBehaviour
@@ -86,12 +98,12 @@ public class AddWmsLayer : MonoBehaviour
         wmsOverlay.layers = "${layer.layer}";
     }
 }
-`.trim();
+`.trim()
 
 const codeSnippets = {
   js: getCesiumJsSnippet,
   unity: getCesiumUnitySnippet,
-};
+}
 </script>
 
 <style scoped>
@@ -133,4 +145,4 @@ const codeSnippets = {
 .delete-btn:hover {
   background-color: #cc0000;
 }
-</style> 
+</style>

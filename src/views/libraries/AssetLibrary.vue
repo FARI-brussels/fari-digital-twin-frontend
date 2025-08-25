@@ -14,7 +14,7 @@
         v-for="item in items"
         :key="item.url"
         class="asset-item"
-        :class="{ 'selected': selectedItem && selectedItem.url === item.url }"
+        :class="{ selected: selectedItem && selectedItem.url === item.url }"
         @click="selectItem(item)"
       >
         <div class="asset-info">
@@ -26,19 +26,22 @@
   </LibraryBase>
 </template>
 
-<script setup>
-import LibraryBase from '../../components/LibraryBase.vue';
-import AssetViewer from '../../components/AssetViewer.vue';
-import UploadAsset from '../../components/UploadAsset.vue';
+<script setup lang="ts">
+import LibraryBase from '../../components/LibraryBase.vue'
+import AssetViewer from '../../components/AssetViewer.vue'
+import UploadAsset from '../../components/UploadAsset.vue'
 
-const transformAssetData = (data) => {
-  return data.map(asset => ({
+interface AssetItem { url: string; name?: string }
+
+const transformAssetData = (data: AssetItem[]): AssetItem[] => {
+  return data.map((asset) => ({
     ...asset,
     name: asset.url.split('/').pop(),
-  }));
-};
+  }))
+}
 
-const getCesiumJsSnippet = (asset) => `
+const getCesiumJsSnippet = (asset: AssetItem) =>
+  `
 import { Viewer, Cartesian3, HeadingPitchRange, Math as CesiumMath } from 'cesium';
 const viewer = new Viewer('cesiumContainer');
 const position = Cartesian3.fromDegrees(4.3517, 50.8503, 0);
@@ -51,9 +54,10 @@ const entity = viewer.entities.add({
     }
 });
 viewer.zoomTo(entity, new HeadingPitchRange(CesiumMath.toRadians(45), CesiumMath.toRadians(-30), 200));
-`.trim();
+`.trim()
 
-const getCesiumUnitySnippet = (asset) => `
+const getCesiumUnitySnippet = (asset: AssetItem) =>
+  `
 using UnityEngine;
 using CesiumForUnity;
 public class LoadGltfModel : MonoBehaviour
@@ -64,12 +68,12 @@ public class LoadGltfModel : MonoBehaviour
         gltfModel.url = "${asset.url}";
     }
 }
-`.trim();
+`.trim()
 
 const codeSnippets = {
   js: getCesiumJsSnippet,
   unity: getCesiumUnitySnippet,
-};
+}
 </script>
 
 <style scoped>
@@ -101,4 +105,4 @@ const codeSnippets = {
 .delete-btn:hover {
   background-color: #cc0000;
 }
-</style> 
+</style>

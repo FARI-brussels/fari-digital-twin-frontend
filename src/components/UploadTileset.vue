@@ -4,7 +4,7 @@
     <form @submit.prevent="uploadTileset">
       <div class="form-group">
         <label for="file">Tileset File (must be a .zip):</label>
-        <input type="file" id="file" @change="handleFileChange" required accept=".zip">
+        <input type="file" id="file" @change="handleFileChange" required accept=".zip" />
       </div>
       <div class="form-group">
         <label for="description">Description:</label>
@@ -22,58 +22,58 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import { uploadItem } from '@/lib/api';
+<script setup lang="ts">
+import { ref } from 'vue'
+import { uploadTileset as uploadTilesetService } from '@/lib/services/tilesets'
 
-const emit = defineEmits(['uploaded', 'cancel']);
+const emit = defineEmits(['uploaded', 'cancel'])
 
-const file = ref(null);
-const description = ref('');
-const error = ref(null);
-const successMessage = ref('');
-const uploading = ref(false);
+const file = ref<File | null>(null)
+const description = ref('')
+const error = ref<string | null>(null)
+const successMessage = ref('')
+const uploading = ref(false)
 
-const handleFileChange = (event) => {
-  file.value = event.target.files[0];
-  successMessage.value = '';
-  error.value = '';
-};
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  file.value = target.files ? target.files[0] : null
+  successMessage.value = ''
+  error.value = ''
+}
 
 const uploadTileset = async () => {
   if (!file.value || !description.value) {
-    error.value = 'File and description are required.';
-    return;
+    error.value = 'File and description are required.'
+    return
   }
 
-  const formData = new FormData();
-  formData.append('zip_file', file.value);
-  formData.append('description', description.value);
+  const formData = new FormData()
+  formData.append('zip_file', file.value)
+  formData.append('description', description.value)
 
-  error.value = null;
-  successMessage.value = '';
-  uploading.value = true;
+  error.value = null
+  successMessage.value = ''
+  uploading.value = true
 
   try {
-    await uploadItem('/tileset-manager/upload', formData);
-    successMessage.value = 'Tileset uploaded successfully!';
-    description.value = '';
+    await uploadTilesetService(formData)
+    successMessage.value = 'Tileset uploaded successfully!'
+    description.value = ''
     // Reset file input if possible (or just the ref)
-    const fileInput = document.querySelector('#file');
-    if(fileInput) fileInput.value = '';
-    file.value = null;
+    const fileInput = document.querySelector('#file') as HTMLInputElement | null
+    if (fileInput) fileInput.value = ''
+    file.value = null
 
     setTimeout(() => {
-        emit('uploaded');
-    }, 1500); // Wait a bit so user can see success message
-
+      emit('uploaded')
+    }, 1500) // Wait a bit so user can see success message
   } catch (err) {
-    console.error('Error uploading tileset:', err);
-    error.value = 'Failed to upload tileset. Please try again.';
+    console.error('Error uploading tileset:', err)
+    error.value = 'Failed to upload tileset. Please try again.'
   } finally {
-    uploading.value = false;
+    uploading.value = false
   }
-};
+}
 </script>
 
 <style scoped>
@@ -101,7 +101,7 @@ h2 {
   font-weight: bold;
 }
 
-.form-group input[type="file"],
+.form-group input[type='file'],
 .form-group textarea {
   width: 100%;
   padding: 8px;
@@ -136,11 +136,11 @@ button:hover:not(:disabled) {
 }
 
 .cancel-btn {
-    background-color: #f44336;
+  background-color: #f44336;
 }
 
 .cancel-btn:hover:not(:disabled) {
-    background-color: #d32f2f;
+  background-color: #d32f2f;
 }
 
 .error {
@@ -154,4 +154,4 @@ button:hover:not(:disabled) {
   margin-top: 15px;
   text-align: center;
 }
-</style> 
+</style>

@@ -1,12 +1,10 @@
 <template>
   <Layout>
-    <main class="w-full">
-      <RouterView/>
-    </main>
+    <RouterView />
   </Layout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 // This component now only serves as the main layout with navigation.
-import Layout from "./components/Layout.vue";
+import Layout from './components/Layout.vue'
 </script>

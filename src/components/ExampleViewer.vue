@@ -2,18 +2,27 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content">
       <button class="close-button" @click="$emit('close')">&times;</button>
-      <div class="cesium-container" ref="cesiumContainer"></div>
+      <div class="cesium-container" ref="cesiumContainer" />
+
       <div v-if="loading" class="loading-indicator">Loading Example...</div>
       <div v-if="error" class="error-message">{{ error }}</div>
+
       <div class="sidebar">
         <h3>{{ example.name }}</h3>
         <p class="example-description">{{ example.description }}</p>
+
         <div class="layer-list">
           <h4>Active Layers:</h4>
-          <div v-for="layer in activeLayers" :key="layer.id" class="layer-item">
+
+          <div 
+            v-for="layer in activeLayers" 
+            :key="layer.id" 
+            class="layer-item"
+          >
             <span class="layer-name">{{ layer.name }}</span>
             <span class="layer-type">({{ layer.type }})</span>
           </div>
+
         </div>
       </div>
     </div>
@@ -21,30 +30,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
-import * as Cesium from 'cesium';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import * as Cesium from 'cesium'
+import 'cesium/Build/Cesium/Widgets/widgets.css'
 
 const props = defineProps({
   example: {
     type: Object,
     required: true,
   },
-});
+})
 
-const emit = defineEmits(['close']);
+defineEmits(['close'])
 
-const cesiumContainer = ref(null);
-const loading = ref(true);
-const error = ref(null);
-let viewer;
+const cesiumContainer = ref(null)
+const loading = ref(true)
+const error = ref(null)
+let viewer
 
-const activeLayers = computed(() => {
-  return props.example.layers.filter(layer => layer.enabled);
-});
+const activeLayers = computed(() => 
+  props.example.layers.filter((layer) => layer.enabled)
+)
 
 onMounted(async () => {
-  if (!cesiumContainer.value) return;
+  if (!cesiumContainer.value) return
 
   try {
     viewer = new Cesium.Viewer(cesiumContainer.value, {
@@ -59,39 +68,46 @@ onMounted(async () => {
       selectionIndicator: true,
       timeline: false,
       navigationHelpButton: false,
-    });
+    })
 
     // Add base layer if included
-    const baseMapLayer = props.example.layers.find(layer => layer.type === 'basemap' && layer.enabled);
+    const baseMapLayer = props.example.layers.find(
+      (layer) => layer.type === 'basemap' && layer.enabled
+    )
     if (baseMapLayer) {
-      const baseLayer = new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/'
-      }));
-      viewer.imageryLayers.add(baseLayer);
+      const baseLayer = new Cesium.ImageryLayer(
+        new Cesium.OpenStreetMapImageryProvider({
+          url: 'https://a.tile.openstreetmap.org/',
+        })
+      )
+      viewer.imageryLayers.add(baseLayer)
     }
 
     // Load tilesets
-    const tilesetLayers = props.example.layers.filter(layer => layer.type === 'tileset' && layer.enabled);
+    const tilesetLayers = props.example.layers.filter(
+      (layer) => layer.type === 'tileset' && layer.enabled
+    )
     if (tilesetLayers.length > 0) {
-      const promises = tilesetLayers.map(layer => Cesium.Cesium3DTileset.fromUrl(layer.url));
-      const loadedTilesets = await Promise.all(promises);
+      const promises = tilesetLayers.map((layer) => Cesium.Cesium3DTileset.fromUrl(layer.url))
+      const loadedTilesets = await Promise.all(promises)
 
       loadedTilesets.forEach((loadedTs, index) => {
-        const layerInfo = tilesetLayers[index];
-        viewer.scene.primitives.add(loadedTs);
-        if (layerInfo.style) {
-          loadedTs.style = layerInfo.style;
-        }
-      });
+        const layerInfo = tilesetLayers[index]
+        viewer.scene.primitives.add(loadedTs)
 
-      if (loadedTilesets.length > 0) {
-        await viewer.zoomTo(loadedTilesets[0]);
-      }
+        if (layerInfo.style) 
+          loadedTs.style = layerInfo.style
+        
+      })
+
+      if (loadedTilesets.length > 0) 
+        await viewer.zoomTo(loadedTilesets[0])
+      
     }
 
     // Add WMS layers
-    const wmsLayers = props.example.layers.filter(layer => layer.type === 'wms' && layer.enabled);
-    wmsLayers.forEach(layer => {
+    const wmsLayers = props.example.layers.filter((layer) => layer.type === 'wms' && layer.enabled)
+    wmsLayers.forEach((layer) => {
       viewer.imageryLayers.addImageryProvider(
         new Cesium.WebMapServiceImageryProvider({
           url: layer.url,
@@ -99,46 +115,46 @@ onMounted(async () => {
           parameters: {
             service: 'WMS',
             transparent: true,
-            format: 'image/png'
+            format: 'image/png',
           },
         })
-      );
-    });
+      )
+    })
 
     // Add click handler for 3D features
-    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
+
     handler.setInputAction((movement) => {
-      const feature = viewer.scene.pick(movement.position);
+      const feature = viewer.scene.pick(movement.position)
       if (feature instanceof Cesium.Cesium3DTileFeature) {
-        const propertyNames = feature.getPropertyNames();
-        let description = '<table class="cesium-infoBox-defaultTable"><tbody>';
+        const propertyNames = feature.getPropertyNames()
+        let description = '<table class="cesium-infoBox-defaultTable"><tbody>'
         for (let i = 0; i < propertyNames.length; i++) {
-          const name = propertyNames[i];
-          const value = feature.getProperty(name);
-          description += `<tr><th>${name}</th><td>${value}</td></tr>`;
+          const name = propertyNames[i]
+          const value = feature.getProperty(name)
+          description += `<tr><th>${name}</th><td>${value}</td></tr>`
         }
-        description += '</tbody></table>';
+        description += '</tbody></table>'
 
         viewer.selectedEntity = new Cesium.Entity({
           name: 'Feature Properties',
           description: description,
-        });
+        })
       }
-    }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
-
+    }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK)
   } catch (err) {
-    console.error('Failed to load example:', err);
-    error.value = 'Error loading example. Some layers might be inaccessible.';
+    console.error('Failed to load example:', err)
+    error.value = 'Error loading example. Some layers might be inaccessible.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-});
+})
 
 onBeforeUnmount(() => {
   if (viewer) {
-    viewer.destroy();
+    viewer.destroy()
   }
-});
+})
 </script>
 
 <style scoped>
@@ -160,7 +176,7 @@ onBeforeUnmount(() => {
   background-color: white;
   padding: 0;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   width: 90vw;
   height: 90vh;
   display: flex;
@@ -194,13 +210,14 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-.loading-indicator, .error-message {
+.loading-indicator,
+.error-message {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  background-color: rgba(0,0,0,0.8);
+  background-color: rgba(0, 0, 0, 0.8);
   padding: 15px;
   border-radius: 5px;
   z-index: 1005;
@@ -259,4 +276,4 @@ onBeforeUnmount(() => {
   color: #aaa;
   text-transform: uppercase;
 }
-</style> 
+</style>

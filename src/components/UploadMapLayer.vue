@@ -4,11 +4,17 @@
     <form @submit.prevent="addLayer">
       <div class="form-group">
         <label for="url">Provider URL:</label>
-        <input type="url" id="url" v-model="url" placeholder="e.g., http://example.com/wms" required>
+        <input
+          type="url"
+          id="url"
+          v-model="url"
+          placeholder="e.g., http://example.com/wms"
+          required
+        />
       </div>
       <div class="form-group">
         <label for="layer">Layer Name/ID:</label>
-        <input type="text" id="layer" v-model="layer" placeholder="e.g., MyLayerName" required>
+        <input type="text" id="layer" v-model="layer" placeholder="e.g., MyLayerName" required />
       </div>
       <div class="form-group">
         <label for="description">Description:</label>
@@ -26,50 +32,42 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import { postItem } from '@/lib/api';
+<script setup lang="ts">
+import { ref } from 'vue'
+import { createMapLayer } from '@/lib/services/maps'
 
-const emit = defineEmits(['uploaded', 'cancel']);
+const emit = defineEmits(['uploaded', 'cancel'])
 
-const url = ref('');
-const layer = ref('');
-const description = ref('');
-const error = ref(null);
-const successMessage = ref('');
-const submitting = ref(false);
-
+const url = ref('')
+const layer = ref('')
+const description = ref('')
+const error = ref<string | null>(null)
+const successMessage = ref('')
+const submitting = ref(false)
 
 const addLayer = async () => {
-  error.value = null;
-  successMessage.value = '';
-  submitting.value = true;
+  error.value = null
+  successMessage.value = ''
+  submitting.value = true
 
   try {
-    await postItem('/maps-manager/add_layer', {
-      layer: {
-        url: url.value,
-        layer: layer.value,
-        description: description.value,
-      }
-    });
+    await createMapLayer({ url: url.value, layer: layer.value, name: description.value })
 
-    successMessage.value = 'Map layer added successfully!';
-    url.value = '';
-    layer.value = '';
-    description.value = '';
+    successMessage.value = 'Map layer added successfully!'
+    url.value = ''
+    layer.value = ''
+    description.value = ''
 
     setTimeout(() => {
-        emit('uploaded');
-    }, 1500);
-
+      emit('uploaded')
+    }, 1500)
   } catch (err) {
-    console.error('Error adding map layer:', err);
-    error.value = 'Failed to add map layer. Please check the details and try again.';
+    console.error('Error adding map layer:', err)
+    error.value = 'Failed to add map layer. Please check the details and try again.'
   } finally {
-    submitting.value = false;
+    submitting.value = false
   }
-};
+}
 </script>
 
 <style scoped>
@@ -124,10 +122,10 @@ button:hover:not(:disabled) {
   background-color: #369f77;
 }
 .cancel-btn {
-    background-color: #f44336;
+  background-color: #f44336;
 }
 .cancel-btn:hover:not(:disabled) {
-    background-color: #d32f2f;
+  background-color: #d32f2f;
 }
 .error {
   color: red;
@@ -139,4 +137,4 @@ button:hover:not(:disabled) {
   margin-top: 15px;
   text-align: center;
 }
-</style> 
+</style>

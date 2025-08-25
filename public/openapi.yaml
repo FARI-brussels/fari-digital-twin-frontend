@@ -49,81 +49,81 @@ paths:
   /bolt-geofence-collector/:
     get:
       summary: Get Bolt geofence zones and restrictions
-      tags: [ Mobility - Bolt ]
+      tags: [Mobility - Bolt]
       responses:
-        "200":
+        '200':
           description: Geofencing zones with rules
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BoltGeofenceCollectorResponse"
+                $ref: '#/components/schemas/BoltGeofenceCollectorResponse'
 
   /bolt-vehicle-position-collector/:
     get:
       summary: Get Bolt vehicle position collector status
       tags: [Mobility - Bolt]
       responses:
-        "200":
+        '200':
           description: List of Bolt vehicle positions
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/BoltVehiclePositionFeatureCollection"
+                $ref: '#/components/schemas/BoltVehiclePositionFeatureCollection'
 
   /bolt-vehicle-type-collector/:
     get:
       summary: Get Bolt vehicle types
-      tags: [ Mobility - Bolt ]
+      tags: [Mobility - Bolt]
       responses:
-        "200":
+        '200':
           description: List of Bolt vehicle types
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BoltVehicleTypeCollectorResponse"
+                $ref: '#/components/schemas/BoltVehicleTypeCollectorResponse'
 
   /brussels-mobility-bike-counters-collector/:
     get:
       summary: List of bike counters
       tags: [Mobility - Brussels]
       responses:
-        "200":
+        '200':
           description: List of bike counters
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/BrusselsMobilityBikeCountersFeatureCollection"
+                $ref: '#/components/schemas/BrusselsMobilityBikeCountersFeatureCollection'
 
   /brussels-mobility-bike-counts-collector/:
     get:
       summary: Bike counter measurement data
       tags: [Mobility - Brussels]
       responses:
-        "200":
+        '200':
           description: Measurement data per bike counter
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BrusselsMobilityBikeCountsResponse"
+                $ref: '#/components/schemas/BrusselsMobilityBikeCountsResponse'
 
   /brussels-mobility-traffic-devices-collector/:
     get:
       summary: List of traffic devices
       tags: [Mobility - Brussels]
       responses:
-        "200":
+        '200':
           description: List of traffic devices
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/BrusselsMobilityTrafficDevicesFeatureCollection"
+                $ref: '#/components/schemas/BrusselsMobilityTrafficDevicesFeatureCollection'
 
   /delijn-gtfs-static-collector/:
     get:
       summary: Get De Lijn GTFS static feed (ZIP)
-      tags: [ Transit - De Lijn ]
+      tags: [Transit - De Lijn]
       responses:
-        "200":
+        '200':
           description: GTFS static ZIP file
           content:
             application/zip:
@@ -134,9 +134,9 @@ paths:
   /delijn-gtfs-realtime-collector/:
     get:
       summary: Get De Lijn GTFS realtime feed (ZIP)
-      tags: [ Transit - De Lijn ]
+      tags: [Transit - De Lijn]
       responses:
-        "200":
+        '200':
           description: GTFS realtime ZIP file
           content:
             application/zip:
@@ -149,7 +149,7 @@ paths:
       summary: Collect the Dott geofencing zones in Brussels
       tags: [Geofence - Dott]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /dott-vehicle-position-collector/:
@@ -157,7 +157,7 @@ paths:
       summary: Collect the Dott positions in Brussels
       tags: [Vehicle position - Dott]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /dott-vehicle-type-collector/:
@@ -165,7 +165,7 @@ paths:
       summary: Collect the Dott vehicle types
       tags: [Vehicle type - Dott]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /energy-collector/:
@@ -173,69 +173,68 @@ paths:
       summary: Get energy collector status
       tags: [Energy]
       responses:
-        "200":
+        '200':
           description: Collector status
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EnergyConsumptionFeatureCollection"
+                $ref: '#/components/schemas/EnergyConsumptionFeatureCollection'
 
   /fixmystreet-collector/:
     get:
       summary: Get FixMyStreet GeoJSON reports
-      tags: [ Urban Issues ]
+      tags: [Urban Issues]
       responses:
-        "200":
+        '200':
           description: GeoJSON FeatureCollection of urban issues
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/FixMyStreetFeatureCollection"
+                $ref: '#/components/schemas/FixMyStreetFeatureCollection'
 
   /fixmystreet-history-harvester/:
     get:
       summary: Get FixMyStreet reports with history (GeoJSON)
-      tags: [ Urban Issues ]
+      tags: [Urban Issues]
       responses:
-        "200":
+        '200':
           description: GeoJSON FeatureCollection including issue history
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/FixMyStreetHistoryFeatureCollection"
+                $ref: '#/components/schemas/FixMyStreetHistoryFeatureCollection'
 
   /infrabel-line-section-collector/:
     get:
       summary: Collect the line sections of the Infrabel network (GeoJSON)
-      tags: [ Line section - Infrabel ]
+      tags: [Line section - Infrabel]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /infrabel-operational-points-collector/:
     get:
       summary: Collect the operational points of the Infrabel network (GeoJSON)
-      tags: [ Operational points - Infrabel ]
+      tags: [Operational points - Infrabel]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /infrabel-punctuality-collector/:
     get:
       summary: Collect the D-1 punctuality data of the Infrabel network (JSON).
-      tags: [ Punctuality - Infrabel ]
+      tags: [Punctuality - Infrabel]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /infrabel-segments-collector/:
     get:
       summary: Collect the segments data of the Infrabel network (JSON).
-      tags: [ Segments - Infrabel ]
+      tags: [Segments - Infrabel]
       responses:
-        "200":
+        '200':
           description: Collector status
-
 
   # Environmental Data
   /irceline-sos-collector/:
@@ -243,62 +242,62 @@ paths:
       summary: Get IRCELINE air quality collector status
       tags: [Air Quality]
       responses:
-        "200":
+        '200':
           description: Collector status
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/AirQualityFeatureCollection"
+                $ref: '#/components/schemas/AirQualityFeatureCollection'
 
   /lime-vehicle-position-collector/:
     get:
       summary: Collect the positions of Lime vehicles in Brussels.
-      tags: [ Vehicle position - Lime ]
+      tags: [Vehicle position - Lime]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /lime-vehicle-type-collector/:
     get:
       summary: Collect the type of Lime vehicles in Brussels.
-      tags: [ Vehicle type - Lime ]
+      tags: [Vehicle type - Lime]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /opensky-collector/:
     get:
       summary: Get OpenSky aircraft positions (GeoJSON)
-      tags: [ Aviation ]
+      tags: [Aviation]
       responses:
-        "200":
+        '200':
           description: Live aircraft position data from OpenSky
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/OpenSkyFeatureCollection"
+                $ref: '#/components/schemas/OpenSkyFeatureCollection'
   /pony-geofence-collector/:
     get:
       summary: Collect the geofencing zones of Pony in Brussels
-      tags: [ Geofence - Pony ]
+      tags: [Geofence - Pony]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /pony-vehicle-position-collector/:
     get:
       summary: Collect the positions of Pony vehicles in Brussels.
-      tags: [ Vehicle position - Pony ]
+      tags: [Vehicle position - Pony]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /pony-vehicle-type-collector/:
     get:
       summary: Collect the type of Pony vehicles in Brussels.
-      tags: [ Vehicle type - Pony ]
+      tags: [Vehicle type - Pony]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /sensor-community-collector/:
@@ -306,27 +305,27 @@ paths:
       summary: Get sensor community collector data
       tags: [Sensors]
       responses:
-        "200":
+        '200':
           description: List of sensor community features
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/SensorCommunityFeatureCollection"
+                $ref: '#/components/schemas/SensorCommunityFeatureCollection'
 
   /sibelga-collector/:
     get:
       summary: Collects data from Sibelga APIs
-      tags: [ Sigelta ]
+      tags: [Sigelta]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /sncb-gtfs-static-collector/:
     get:
       summary: Collect the static GTFS data from SNCB.
-      tags: [ Static GTFS - SNCB ]
+      tags: [Static GTFS - SNCB]
       responses:
-        "200":
+        '200':
           description: Collector status
           content:
             application/zip:
@@ -337,9 +336,9 @@ paths:
   /sncb-gtfs-realtime-collector/:
     get:
       summary: Collect the realtime GTFS data from SNCB.
-      tags: [ Realtime GTFS - SNCB ]
+      tags: [Realtime GTFS - SNCB]
       responses:
-        "200":
+        '200':
           description: Collector status
           content:
             application/zip:
@@ -350,9 +349,9 @@ paths:
   /stib-gtfs-collector/:
     get:
       summary: Collect the static GTFS data from STIB.
-      tags: [ Static GTFS - STIB ]
+      tags: [Static GTFS - STIB]
       responses:
-        "200":
+        '200':
           description: Collector status
           content:
             application/zip:
@@ -363,33 +362,33 @@ paths:
   /stib-shapefiles-collector/:
     get:
       summary: Collect the shapefiles data from STIB.
-      tags: [ Shapefiles - STIB ]
+      tags: [Shapefiles - STIB]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /stib-vehicle-position-collector/:
     get:
       summary: Collect the positions of STIB vehicles in Brussels.
-      tags: [ Vehicle position - STIB ]
+      tags: [Vehicle position - STIB]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /stib-stops-collector/:
     get:
       summary: Collect the stops of STIB in Brussels.
-      tags: [ Stops - STIB ]
+      tags: [Stops - STIB]
       responses:
-        "200":
+        '200':
           description: Collector status
 
   /tec-gtfs-static-collector/:
     get:
       summary: Collect the static GTFS data from TEC.
-      tags: [ Static GTFS - TEC ]
+      tags: [Static GTFS - TEC]
       responses:
-        "200":
+        '200':
           description: Collector status
           content:
             application/zip:
@@ -400,9 +399,9 @@ paths:
   /tec-gtfs-realtime-collector/:
     get:
       summary: Collect the realtime GTFS data from TEC.
-      tags: [ Realtime GTFS - TEC ]
+      tags: [Realtime GTFS - TEC]
       responses:
-        "200":
+        '200':
           description: Collector status
           content:
             application/zip:
@@ -414,14 +413,14 @@ paths:
   /telraam-traffic-collector/:
     get:
       summary: Get Telraam traffic data (GeoJSON)
-      tags: [ Traffic ]
+      tags: [Traffic]
       responses:
-        "200":
+        '200':
           description: Live traffic data from Telraam (GeoJSON)
           content:
             application/geo+json:
               schema:
-                $ref: "#/components/schemas/TelraamFeatureCollection"
+                $ref: '#/components/schemas/TelraamFeatureCollection'
 
 components:
   schemas:
@@ -543,13 +542,13 @@ components:
           type: array
           items:
             oneOf:
-              - $ref: "#/components/schemas/Point"
-              - $ref: "#/components/schemas/MultiPoint"
-              - $ref: "#/components/schemas/LineString"
-              - $ref: "#/components/schemas/MultiLineString"
-              - $ref: "#/components/schemas/Polygon"
-              - $ref: "#/components/schemas/MultiPolygon"
-              - $ref: "#/components/schemas/GeometryCollection"
+              - $ref: '#/components/schemas/Point'
+              - $ref: '#/components/schemas/MultiPoint'
+              - $ref: '#/components/schemas/LineString'
+              - $ref: '#/components/schemas/MultiLineString'
+              - $ref: '#/components/schemas/Polygon'
+              - $ref: '#/components/schemas/MultiPolygon'
+              - $ref: '#/components/schemas/GeometryCollection'
 
     # GeoJSON Feature and FeatureCollection
     Feature:
@@ -561,13 +560,13 @@ components:
           enum: [Feature]
         geometry:
           oneOf:
-            - $ref: "#/components/schemas/Point"
-            - $ref: "#/components/schemas/MultiPoint"
-            - $ref: "#/components/schemas/LineString"
-            - $ref: "#/components/schemas/MultiLineString"
-            - $ref: "#/components/schemas/Polygon"
-            - $ref: "#/components/schemas/MultiPolygon"
-            - $ref: "#/components/schemas/GeometryCollection"
+            - $ref: '#/components/schemas/Point'
+            - $ref: '#/components/schemas/MultiPoint'
+            - $ref: '#/components/schemas/LineString'
+            - $ref: '#/components/schemas/MultiLineString'
+            - $ref: '#/components/schemas/Polygon'
+            - $ref: '#/components/schemas/MultiPolygon'
+            - $ref: '#/components/schemas/GeometryCollection'
         properties:
           type: object
 
@@ -581,9 +580,7 @@ components:
         features:
           type: array
           items:
-            $ref: "#/components/schemas/Feature"
-
-
+            $ref: '#/components/schemas/Feature'
 
     BoltGeofenceRule:
       type: object
@@ -615,31 +612,31 @@ components:
         rules:
           type: array
           items:
-            $ref: "#/components/schemas/BoltGeofenceRule"
+            $ref: '#/components/schemas/BoltGeofenceRule'
 
     BoltGeofenceFeature:
       allOf:
-        - $ref: "#/components/schemas/Feature"
+        - $ref: '#/components/schemas/Feature'
         - type: object
           properties:
             geometry:
-              $ref: "#/components/schemas/MultiPolygon"
+              $ref: '#/components/schemas/MultiPolygon'
             properties:
-              $ref: "#/components/schemas/BoltGeofenceFeatureProperties"
+              $ref: '#/components/schemas/BoltGeofenceFeatureProperties'
 
     BoltGeofenceFeatureCollection:
       allOf:
-        - $ref: "#/components/schemas/FeatureCollection"
+        - $ref: '#/components/schemas/FeatureCollection'
         - type: object
           properties:
             features:
               type: array
               items:
-                $ref: "#/components/schemas/BoltGeofenceFeature"
+                $ref: '#/components/schemas/BoltGeofenceFeature'
 
     BoltGeofenceCollectorResponse:
       type: object
-      required: [ last_updated, ttl, version, data ]
+      required: [last_updated, ttl, version, data]
       properties:
         last_updated:
           type: integer
@@ -649,11 +646,10 @@ components:
           type: string
         data:
           type: object
-          required: [ geofencing_zones ]
+          required: [geofencing_zones]
           properties:
             geofencing_zones:
-              $ref: "#/components/schemas/BoltGeofenceFeatureCollection"
-
+              $ref: '#/components/schemas/BoltGeofenceFeatureCollection'
 
     BoltVehiclePositionFeatureProperties:
       type: object
@@ -695,23 +691,23 @@ components:
 
     BoltVehiclePositionFeature:
       allOf:
-        - $ref: "#/components/schemas/Feature"
+        - $ref: '#/components/schemas/Feature'
         - type: object
           properties:
             geometry:
-              $ref: "#/components/schemas/Point"
+              $ref: '#/components/schemas/Point'
             properties:
-              $ref: "#/components/schemas/BoltVehiclePositionFeatureProperties"
+              $ref: '#/components/schemas/BoltVehiclePositionFeatureProperties'
 
     BoltVehiclePositionFeatureCollection:
       allOf:
-        - $ref: "#/components/schemas/FeatureCollection"
+        - $ref: '#/components/schemas/FeatureCollection'
         - type: object
           properties:
             features:
               type: array
               items:
-                $ref: "#/components/schemas/BoltVehiclePositionFeature"
+                $ref: '#/components/schemas/BoltVehiclePositionFeature'
 
     BoltVehicleType:
       type: object
@@ -728,10 +724,10 @@ components:
           description: Unique identifier of the vehicle type (UUID)
         propulsion_type:
           type: string
-          enum: [ electric, electric_assist, human ]
+          enum: [electric, electric_assist, human]
         form_factor:
           type: string
-          enum: [ scooter, bicycle ]
+          enum: [scooter, bicycle]
         max_range_meters:
           type: integer
           nullable: true
@@ -739,23 +735,23 @@ components:
           type: string
         return_constraint:
           type: string
-          enum: [ station ]
+          enum: [station]
         default_reserve_time:
           type: integer
           description: Time in milliseconds
 
     BoltVehicleTypeData:
       type: object
-      required: [ vehicle_types ]
+      required: [vehicle_types]
       properties:
         vehicle_types:
           type: array
           items:
-            $ref: "#/components/schemas/BoltVehicleType"
+            $ref: '#/components/schemas/BoltVehicleType'
 
     BoltVehicleTypeCollectorResponse:
       type: object
-      required: [ last_updated, ttl, version, data ]
+      required: [last_updated, ttl, version, data]
       properties:
         last_updated:
           type: integer
@@ -766,10 +762,7 @@ components:
         version:
           type: string
         data:
-          $ref: "#/components/schemas/BoltVehicleTypeData"
-
-
-
+          $ref: '#/components/schemas/BoltVehicleTypeData'
 
     BrusselsMobilityBikeCountersFeatureProperties:
       type: object
@@ -822,27 +815,26 @@ components:
 
     BrusselsMobilityBikeCountersFeature:
       allOf:
-        - $ref: "#/components/schemas/Feature"
+        - $ref: '#/components/schemas/Feature'
         - type: object
           properties:
             geometry:
               allOf:
-                - $ref: "#/components/schemas/Point"
+                - $ref: '#/components/schemas/Point'
                 - type: object
                   properties:
                     geometry_name:
                       type: string
             properties:
-              $ref: "#/components/schemas/BrusselsMobilityBikeCountersFeatureProperties"
+              $ref: '#/components/schemas/BrusselsMobilityBikeCountersFeatureProperties'
             id:
               oneOf:
                 - type: string
                 - type: integer
 
-
     BrusselsMobilityBikeCountersFeatureCollection:
       allOf:
-        - $ref: "#/components/schemas/FeatureCollection"
+        - $ref: '#/components/schemas/FeatureCollection'
         - type: object
           required: [requestDate, totalFeatures]
           properties:
@@ -854,8 +846,7 @@ components:
             features:
               type: array
               items:
-                $ref: "#/components/schemas/BrusselsMobilityBikeCountersFeature"
-
+                $ref: '#/components/schemas/BrusselsMobilityBikeCountersFeature'
 
     BrusselsMobilityBikeCountsItem:
       type: object
@@ -877,7 +868,7 @@ components:
     BrusselsMobilityBikeCountsData:
       type: object
       additionalProperties:
-        $ref: "#/components/schemas/BrusselsMobilityBikeCountsItem"
+        $ref: '#/components/schemas/BrusselsMobilityBikeCountsItem'
 
     BrusselsMobilityBikeCountsResponse:
       type: object
@@ -888,8 +879,7 @@ components:
         requestDate:
           type: string
         data:
-          $ref: "#/components/schemas/BrusselsMobilityBikeCountsData"
-
+          $ref: '#/components/schemas/BrusselsMobilityBikeCountsData'
 
     BrusselsMobilityTrafficDevicesFeatureProperties:
       type: object
@@ -922,18 +912,18 @@ components:
 
     BrusselsMobilityTrafficDevicesFeature:
       allOf:
-        - $ref: "#/components/schemas/Feature"
+        - $ref: '#/components/schemas/Feature'
         - type: object
           properties:
             geometry:
               allOf:
-                - $ref: "#/components/schemas/Point"
+                - $ref: '#/components/schemas/Point'
                 - type: object
                   properties:
                     geometry_name:
                       type: string
             properties:
-              $ref: "#/components/schemas/BrusselsMobilityTrafficDevicesFeatureProperties"
+              $ref: '#/components/schemas/BrusselsMobilityTrafficDevicesFeatureProperties'
             id:
               oneOf:
                 - type: string
@@ -941,7 +931,7 @@ components:
 
     BrusselsMobilityTrafficDevicesFeatureCollection:
       allOf:
-        - $ref: "#/components/schemas/FeatureCollection"
+        - $ref: '#/components/schemas/FeatureCollection'
         - type: object
           required: [requestDate, totalFeatures]
           properties:
@@ -952,8 +942,7 @@ components:
             features:
               type: array
               items:
-                $ref: "#/components/schemas/BrusselsMobilityTrafficDevicesFeature"
-
+                $ref: '#/components/schemas/BrusselsMobilityTrafficDevicesFeature'
 
     EnergyConsumptionHistoryItem:
       type: object
@@ -969,7 +958,7 @@ components:
 
     EnergyConsumptionFeature:
       allOf:
-        - $ref: "#/components/schemas/Feature"
+        - $ref: '#/components/schemas/Feature'
         - type: object
           required: [externalID, name, geometry, properties, history, lastUpdated]
           properties:
@@ -978,53 +967,53 @@ components:
             name:
               type: string
             geometry:
-              $ref: "#/components/schemas/Point"
+              $ref: '#/components/schemas/Point'
             properties:
-              $ref: "#/components/schemas/EnergyConsumptionHistoryItem"
+              $ref: '#/components/schemas/EnergyConsumptionHistoryItem'
             history:
               type: array
               items:
-                $ref: "#/components/schemas/EnergyConsumptionHistoryItem"
+                $ref: '#/components/schemas/EnergyConsumptionHistoryItem'
             lastUpdated:
               type: string
               format: date-time
 
     EnergyConsumptionFeatureCollection:
       allOf:
-        - $ref: "#/components/schemas/FeatureCollection"
+        - $ref: '#/components/schemas/FeatureCollection'
         - type: object
           properties:
             features:
               type: array
               items:
-                $ref: "#/components/schemas/EnergyConsumptionFeature"
+                $ref: '#/components/schemas/EnergyConsumptionFeature'
 
     FixMyStreetFeatureCollection:
       type: object
-      required: [ type, features ]
+      required: [type, features]
       properties:
         type:
           type: string
-          enum: [ FeatureCollection ]
+          enum: [FeatureCollection]
         features:
           type: array
           items:
-            $ref: "#/components/schemas/FixMyStreetFeature"
+            $ref: '#/components/schemas/FixMyStreetFeature'
 
     FixMyStreetFeature:
       type: object
-      required: [ type, geometry, properties ]
+      required: [type, geometry, properties]
       properties:
         type:
           type: string
-          enum: [ Feature ]
+          enum: [Feature]
         geometry:
           type: object
-          required: [ type, coordinates ]
+          required: [type, coordinates]
           properties:
             type:
               type: string
-              enum: [ Point ]
+              enum: [Point]
             coordinates:
               type: array
               items:
@@ -1033,7 +1022,7 @@ components:
               maxItems: 2
         properties:
           type: object
-          required: [ id, status, location, category, responsibleOrganisation, creationDate ]
+          required: [id, status, location, category, responsibleOrganisation, creationDate]
           properties:
             id:
               type: integer
@@ -1045,7 +1034,7 @@ components:
               format: date-time
             status:
               type: string
-              enum: [ CREATED, PROCESSING, CLOSED ]
+              enum: [CREATED, PROCESSING, CLOSED]
             duplicates:
               type: integer
             declaredResolved:
@@ -1063,17 +1052,17 @@ components:
               format: date-time
               nullable: true
             location:
-              $ref: "#/components/schemas/FixMyStreetAddress"
+              $ref: '#/components/schemas/FixMyStreetAddress'
             category:
-              $ref: "#/components/schemas/FixMyStreetCategory"
+              $ref: '#/components/schemas/FixMyStreetCategory'
             responsibleOrganisation:
-              $ref: "#/components/schemas/FixMyStreetOrg"
+              $ref: '#/components/schemas/FixMyStreetOrg'
             responsibleDepartment:
-              $ref: "#/components/schemas/FixMyStreetDept"
+              $ref: '#/components/schemas/FixMyStreetDept'
 
     FixMyStreetAddress:
       type: object
-      required: [ streetNumber, streetNameFr, streetNameNl, postalCode ]
+      required: [streetNumber, streetNameFr, streetNameNl, postalCode]
       properties:
         streetNumber:
           type: string
@@ -1088,7 +1077,7 @@ components:
 
     FixMyStreetCategory:
       type: object
-      required: [ id, nameFr, nameNl, nameEn ]
+      required: [id, nameFr, nameNl, nameEn]
       properties:
         id:
           type: integer
@@ -1103,7 +1092,7 @@ components:
 
     FixMyStreetOrg:
       type: object
-      required: [ id, nameFr, nameNl ]
+      required: [id, nameFr, nameNl]
       properties:
         id:
           type: integer
@@ -1118,7 +1107,7 @@ components:
 
     FixMyStreetDept:
       type: object
-      required: [ id, nameFr ]
+      required: [id, nameFr]
       properties:
         id:
           type: integer
@@ -1138,19 +1127,19 @@ components:
 
     FixMyStreetHistoryFeatureCollection:
       type: object
-      required: [ type, features ]
+      required: [type, features]
       properties:
         type:
           type: string
-          enum: [ FeatureCollection ]
+          enum: [FeatureCollection]
         features:
           type: array
           items:
-            $ref: "#/components/schemas/FixMyStreetHistoryFeature"
+            $ref: '#/components/schemas/FixMyStreetHistoryFeature'
 
     FixMyStreetHistoryFeature:
       allOf:
-        - $ref: "#/components/schemas/FixMyStreetFeature"
+        - $ref: '#/components/schemas/FixMyStreetFeature'
         - type: object
           properties:
             history:
@@ -1160,30 +1149,30 @@ components:
 
     OpenSkyFeatureCollection:
       type: object
-      required: [ type, features ]
+      required: [type, features]
       properties:
         type:
           type: string
-          enum: [ FeatureCollection ]
+          enum: [FeatureCollection]
         features:
           type: array
           items:
-            $ref: "#/components/schemas/OpenSkyFeature"
+            $ref: '#/components/schemas/OpenSkyFeature'
 
     OpenSkyFeature:
       type: object
-      required: [ type, geometry, properties ]
+      required: [type, geometry, properties]
       properties:
         type:
           type: string
-          enum: [ Feature ]
+          enum: [Feature]
         geometry:
           type: object
-          required: [ type, coordinates ]
+          required: [type, coordinates]
           properties:
             type:
               type: string
-              enum: [ Point ]
+              enum: [Point]
             coordinates:
               type: array
               minItems: 3
@@ -1250,30 +1239,30 @@ components:
 
     TelraamFeatureCollection:
       type: object
-      required: [ type, features ]
+      required: [type, features]
       properties:
         type:
           type: string
-          enum: [ FeatureCollection ]
+          enum: [FeatureCollection]
         features:
           type: array
           items:
-            $ref: "#/components/schemas/TelraamFeature"
+            $ref: '#/components/schemas/TelraamFeature'
 
     TelraamFeature:
       type: object
-      required: [ type, geometry, properties ]
+      required: [type, geometry, properties]
       properties:
         type:
           type: string
-          enum: [ Feature ]
+          enum: [Feature]
         geometry:
           type: object
-          required: [ type, coordinates ]
+          required: [type, coordinates]
           properties:
             type:
               type: string
-              enum: [ Point ]
+              enum: [Point]
             coordinates:
               type: array
               items:
@@ -1282,7 +1271,7 @@ components:
               maxItems: 2
         properties:
           type: object
-          required: [ segment_id, vehicles, timestamp ]
+          required: [segment_id, vehicles, timestamp]
           properties:
             segment_id:
               type: integer
@@ -1380,27 +1369,26 @@ components:
 
     AirQualityFeature:
       allOf:
-        - $ref: "#/components/schemas/Feature"
+        - $ref: '#/components/schemas/Feature'
         - type: object
           required: [id, geometry, properties]
           properties:
             id:
               type: string
             geometry:
-              $ref: "#/components/schemas/Point"
+              $ref: '#/components/schemas/Point'
             properties:
-              $ref: "#/components/schemas/AirQualityFeatureProperties"
+              $ref: '#/components/schemas/AirQualityFeatureProperties'
 
     AirQualityFeatureCollection:
       allOf:
-        - $ref: "#/components/schemas/FeatureCollection"
+        - $ref: '#/components/schemas/FeatureCollection'
         - type: object
           properties:
             features:
               type: array
               items:
-                $ref: "#/components/schemas/AirQualityFeature"
-
+                $ref: '#/components/schemas/AirQualityFeature'
 
     SensorCommunitySensorType:
       type: object
@@ -1422,7 +1410,7 @@ components:
           required: [type]
           properties:
             type:
-              $ref: "#/components/schemas/SensorCommunitySensorType"
+              $ref: '#/components/schemas/SensorCommunitySensorType'
 
     SensorCommunityLocation:
       type: object
@@ -1457,35 +1445,35 @@ components:
         sensordatavalues:
           type: array
           items:
-            $ref: "#/components/schemas/SensorCommunitySensorDataValue"
+            $ref: '#/components/schemas/SensorCommunitySensorDataValue'
         id:
           type: integer
         timestamp:
           type: string
         sensor:
-          $ref: "#/components/schemas/SensorCommunitySensor"
+          $ref: '#/components/schemas/SensorCommunitySensor'
         location:
-          $ref: "#/components/schemas/SensorCommunityLocation"
+          $ref: '#/components/schemas/SensorCommunityLocation'
 
     SensorCommunityFeature:
       allOf:
-        - $ref: "#/components/schemas/Feature"
+        - $ref: '#/components/schemas/Feature'
         - type: object
           required: [id, geometry, properties]
           properties:
             id:
               type: integer
             geometry:
-              $ref: "#/components/schemas/Point"
+              $ref: '#/components/schemas/Point'
             properties:
-              $ref: "#/components/schemas/SensorCommunityFeatureProperties"
+              $ref: '#/components/schemas/SensorCommunityFeatureProperties'
 
     SensorCommunityFeatureCollection:
       allOf:
-        - $ref: "#/components/schemas/FeatureCollection"
+        - $ref: '#/components/schemas/FeatureCollection'
         - type: object
           properties:
             features:
               type: array
               items:
-                $ref: "#/components/schemas/SensorCommunityFeature"
+                $ref: '#/components/schemas/SensorCommunityFeature'

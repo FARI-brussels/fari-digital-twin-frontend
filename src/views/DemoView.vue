@@ -36,7 +36,6 @@
 
 <script setup>
 import { ref } from 'vue';
-import * as Cesium from 'cesium';
 import ExampleViewer from '../components/ExampleViewer.vue';
 
 const selectedExample = ref(null);
@@ -57,38 +56,45 @@ const examples = ref([
         id: 'buildings',
         name: 'Building Tileset',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-06-18_20-47-13/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-30-52/tileset.json',
         enabled: true,
-        style: new Cesium.Cesium3DTileStyle({
-          color: {
-            conditions: [
-              ["${TYPE} === 'ROOFSURFACE'", "color('red')"],
-              ["true", "color('white')"],
-            ],
-          },
-        }),
       },
       {
         id: 'trees',
         name: 'Tree Tileset',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-07-10_14-31-18/tiles/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-24-12/tiles/tileset.json',
         enabled: true,
       },
       {
-        id: 'evchargers',
-        name: 'EV Charger Tileset',
+        id: 'chirec',
+        name: 'Chirec hospital',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-06-19_14-19-30/tiles/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-20-46/tileset.json',
+        enabled: true,
+      },
+      {
+        id: 'josephine',
+        name: 'Josephine Charlotte station',
+        type: 'tileset',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-20-16/tileset.json',
         enabled: true,
       },
       {
         id: 'lampposts',
         name: 'Lamppost Tileset',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-06-20_09-25-48/tiles/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-42-25/tiles/tileset.json',
         enabled: true,
       },
+      {
+        id: 'usquare',
+        name: 'Usquare',
+        type: 'tileset',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-15-03/tileset.json',
+        enabled: true,
+        
+      }
     ],
   },
   {
@@ -106,21 +112,21 @@ const examples = ref([
         id: 'buildings',
         name: 'Building Tileset',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-06-18_20-47-13/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-30-52/tileset.json',
         enabled: true,
       },
       {
         id: 'trees',
         name: 'Tree Tileset',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-07-10_14-31-18/tiles/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-24-12/tiles/tileset.json',
         enabled: true,
       },
       {
         id: 'trees_jette',
         name: 'Tree Tileset Jette',
         type: 'tileset',
-        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-07-10_14-26-56/tiles/tileset.json',
+        url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-27-59/tiles/tileset.json',
         enabled: true,
       },
       {

@@ -11,7 +11,7 @@ import FariLogo from "@/assets/FariLogo.vue";
 
     </router-link>
     <div class="flex gap-2">
-      <Button variant="ghost" as-child class="text-white hover:bg-white/10">
+      <Button variant="ghost" as-child class="text-white hover:bg-white/10 hover:text-white">
         <RouterLink to="/doc">
           API doc
         </RouterLink>

@@ -1,25 +1,3 @@
-<template>
-  <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal-content">
-      <button class="close-button" @click="$emit('close')">&times;</button>
-      <div class="cesium-container" ref="cesiumContainer"></div>
-      <div v-if="loading" class="loading-indicator">Loading Example...</div>
-      <div v-if="error" class="error-message">{{ error }}</div>
-      <div class="sidebar">
-        <h3>{{ example.name }}</h3>
-        <p class="example-description">{{ example.description }}</p>
-        <div class="layer-list">
-          <h4>Active Layers:</h4>
-          <div v-for="layer in activeLayers" :key="layer.id" class="layer-item">
-            <span class="layer-name">{{ layer.name }}</span>
-            <span class="layer-type">({{ layer.type }})</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import * as Cesium from 'cesium';
@@ -141,33 +119,36 @@ onBeforeUnmount(() => {
 });
 </script>
 
+<template>
+  <div class="fixed inset-0 flex items-center justify-center bg-black/70 z-[1000]">
+    <div class="relative bg-white rounded-lg shadow-lg w-[90vw] h-[90vh] flex flex-col overflow-hidden">
+      <button
+        class="absolute top-4 right-4 text-2xl font-bold bg-black/40 rounded-full w-8 h-8 flex items-center justify-center text-white z-[1010]"
+        @click="$emit('close')">&times;</button>
+      <div class="w-full h-full" ref="cesiumContainer"></div>
+      <div v-if="loading"
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/80 px-4 py-2 rounded z-[1005]">
+        Loading Example...</div>
+      <div v-if="error"
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-red-200 bg-black/80 px-4 py-2 rounded z-[1005]">
+        {{ error }}</div>
+      <div
+        class="absolute top-4 left-4 bg-gray-900/90 text-white p-4 rounded-lg z-[1001] max-w-xs max-h-[70vh] overflow-y-auto">
+        <h3 class="text-green-500 mb-2">{{ example.name }}</h3>
+        <p class="mb-4 text-sm">{{ example.description }}</p>
+        <div>
+          <h4 class="text-gray-300 text-xs mb-2">Active Layers:</h4>
+          <div v-for="layer in activeLayers" :key="layer.id" class="mb-2 pb-2 border-b border-gray-700">
+            <span class="font-bold text-sm">{{ layer.name }}</span>
+            <span class="text-xs text-gray-400 uppercase">({{ layer.type }})</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  position: relative;
-  background-color: white;
-  padding: 0;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  width: 90vw;
-  height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 .cesium-container {
   width: 100%;
   height: 100%;
@@ -176,31 +157,14 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  font-size: 20px;
-  font-weight: bold;
-  background: rgba(0, 0, 0, 0.4);
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 1010;
-  color: #fff;
-  width: 32px;
-  height: 32px;
-  line-height: 32px;
-  text-align: center;
-}
-
-.loading-indicator, .error-message {
+.loading-indicator,
+.error-message {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  background-color: rgba(0,0,0,0.8);
+  background-color: rgba(0, 0, 0, 0.8);
   padding: 15px;
   border-radius: 5px;
   z-index: 1005;
@@ -259,4 +223,4 @@ onBeforeUnmount(() => {
   color: #aaa;
   text-transform: uppercase;
 }
-</style> 
+</style>

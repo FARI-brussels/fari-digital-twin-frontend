@@ -1,48 +1,3 @@
-<template>
-  <div class="library-container">
-    <component :is="uploadComponent" v-if="showUploadPage" @uploaded="handleItemUploaded" @cancel="showUploadPage = false" />
-    <div v-else class="two-column-layout">
-      <!-- Left Column: Item List -->
-      <div class="left-column">
-        <div class="header">
-          <h1>{{ title }}</h1>
-          <button @click="showUploadPage = true" class="upload-btn">Upload {{ itemType }}</button>
-        </div>
-        <div v-if="error" class="error">{{ error }}</div>
-        <div v-if="loading" class="loading-text">Loading {{ itemType }}s...</div>
-        <div v-if="!loading && items.length === 0" class="no-items-text">
-          No {{ itemType }}s found.
-        </div>
-        <ul v-if="items.length > 0" class="item-list">
-            <slot name="list-item" :items="items" :selectedItem="selectedItem" :selectItem="selectItem" :deleteItem="deleteItem"></slot>
-        </ul>
-      </div>
-
-      <!-- Right Column: Viewer and Code Snippet -->
-      <div class="right-column">
-        <div v-if="selectedItem" class="viewer-section">
-          <div class="viewer-container">
-            <component :is="viewerComponent" v-bind="viewerProps" />
-          </div>
-          <div class="code-snippet-container">
-            <div class="code-snippet-header">
-              <h3>Code Example</h3>
-              <div class="language-selector">
-                <button :class="{ active: selectedLanguage === 'js' }" @click="selectedLanguage = 'js'">CesiumJS</button>
-                <button :class="{ active: selectedLanguage === 'unity' }" @click="selectedLanguage = 'unity'">Cesium Unity</button>
-              </div>
-            </div>
-            <pre><code>{{ currentCodeSnippet }}</code></pre>
-          </div>
-        </div>
-        <div v-else class="placeholder">
-          <p>Select an {{ itemType }} from the list to visualize it and get the integration code.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { fetchItems as apiFetchItems, deleteItem as apiDeleteItem } from '@/lib/api';
@@ -67,17 +22,17 @@ const showUploadPage = ref(false);
 const selectedLanguage = ref('js'); // 'js' or 'unity'
 
 const viewerProps = computed(() => {
-    if(!selectedItem.value) return {};
-    if (props.itemType === 'asset') return { assetUrl: selectedItem.value.url };
-    if (props.itemType === 'map') return { mapLayer: selectedItem.value };
-    if (props.itemType === 'tileset') return { tilesetUrl: selectedItem.value.url };
-    return {};
+  if (!selectedItem.value) return {};
+  if (props.itemType === 'asset') return { assetUrl: selectedItem.value.url };
+  if (props.itemType === 'map') return { mapLayer: selectedItem.value };
+  if (props.itemType === 'tileset') return { tilesetUrl: selectedItem.value.url };
+  return {};
 });
 
 const currentCodeSnippet = computed(() => {
-    if (!selectedItem.value) return '';
-    const snippetGenerator = props.codeSnippets[selectedLanguage.value];
-    return snippetGenerator ? snippetGenerator(selectedItem.value) : '';
+  if (!selectedItem.value) return '';
+  const snippetGenerator = props.codeSnippets[selectedLanguage.value];
+  return snippetGenerator ? snippetGenerator(selectedItem.value) : '';
 });
 
 const fetchItems = async () => {
@@ -87,12 +42,12 @@ const fetchItems = async () => {
     const response = await apiFetchItems(props.fetchUrl);
     const data = response.data;
     if (Array.isArray(data)) {
-        items.value = props.transformData ? props.transformData(data) : data;
-        if (items.value.length > 0) {
-            selectedItem.value = items.value[0];
-        }
+      items.value = props.transformData ? props.transformData(data) : data;
+      if (items.value.length > 0) {
+        selectedItem.value = items.value[0];
+      }
     } else {
-        items.value = [];
+      items.value = [];
     }
   } catch (err) {
     console.error(`Error fetching ${props.itemType}s:`, err);
@@ -109,11 +64,11 @@ const handleItemUploaded = () => {
 };
 
 const deleteItem = async (item) => {
-    if (props.deleteItem) {
-        await props.deleteItem(item);
-        fetchItems(); // Refetch items after custom delete
-        return;
-    }
+  if (props.deleteItem) {
+    await props.deleteItem(item);
+    fetchItems(); // Refetch items after custom delete
+    return;
+  }
   try {
     await apiDeleteItem(props.deleteUrlBase, item);
     items.value = items.value.filter(i => i.url !== item.url);
@@ -133,100 +88,51 @@ const selectItem = (item) => {
 onMounted(fetchItems);
 </script>
 
-<style scoped>
-.library-container {
-  height: 100vh;
-  display: flex;
-}
-.two-column-layout {
-  display: flex;
-  width: 100%;
-}
-.left-column {
-  width: 40%;
-  padding: 20px;
-  border-right: 1px solid #ccc;
-  overflow-y: auto;
-  background-color: #f9f9f9;
-}
-.right-column {
-  width: 60%;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-h1 {
-  color: #333;
-}
-.upload-btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  background-color: #4CAF50;
-  color: white;
-  cursor: pointer;
-}
-.upload-btn:hover {
-  background-color: #45a049;
-}
-.item-list {
-  list-style: none;
-  padding: 0;
-}
-.viewer-section {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-.viewer-container {
-    flex-grow: 1;
-    background-color: #e0e0e0;
-    margin-bottom: 20px;
-}
-.code-snippet-container {
-    flex-shrink: 0;
-}
-.code-snippet-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.language-selector button {
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  background-color: #f0f0f0;
-}
-.language-selector button.active {
-  background-color: #ccc;
-  font-weight: bold;
-}
-pre {
-  background-color: #2d2d2d;
-  color: #f1f1f1;
-  padding: 15px;
-  border-radius: 5px;
-  overflow-x: auto;
-}
-.placeholder {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  color: #888;
-}
-.error {
-    color: red;
-}
-.loading-text, .no-items-text {
-    text-align: center;
-    padding: 20px;
-    color: #666;
-}
-</style> 
+<template>
+  <div class="h-screen flex">
+    <component :is="uploadComponent" v-if="showUploadPage" @uploaded="handleItemUploaded"
+      @cancel="showUploadPage = false" />
+    <div v-else class="flex w-full">
+      <div class="w-2/5 p-5 border-r border-gray-300 overflow-y-auto bg-gray-50">
+        <div class="flex justify-between items-center mb-5">
+          <h1 class="text-gray-800 text-xl font-bold">{{ title }}</h1>
+          <button @click="showUploadPage = true"
+            class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700">Upload {{ itemType }}</button>
+        </div>
+        <div v-if="error" class="text-red-600 mb-2">{{ error }}</div>
+        <div v-if="loading" class="text-center py-5 text-gray-500">Loading {{ itemType }}s...</div>
+        <div v-if="!loading && items.length === 0" class="text-center py-5 text-gray-400">No {{ itemType }}s found.
+        </div>
+        <ul v-if="items.length > 0">
+          <slot name="list-item" :items="items" :selectedItem="selectedItem" :selectItem="selectItem"
+            :deleteItem="deleteItem"></slot>
+        </ul>
+      </div>
+      <div class="w-3/5 p-5 flex flex-col">
+        <div v-if="selectedItem" class="flex flex-col h-full">
+          <div class="flex-grow bg-gray-200 mb-5">
+            <component :is="viewerComponent" v-bind="viewerProps" />
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="font-bold">Code Example</h3>
+              <div>
+                <button
+                  :class="['px-2 py-1 border rounded mr-2', selectedLanguage === 'js' ? 'bg-gray-300 font-bold' : 'bg-gray-100']"
+                  @click="selectedLanguage = 'js'">CesiumJS</button>
+                <button
+                  :class="['px-2 py-1 border rounded', selectedLanguage === 'unity' ? 'bg-gray-300 font-bold' : 'bg-gray-100']"
+                  @click="selectedLanguage = 'unity'">Cesium Unity</button>
+              </div>
+            </div>
+            <pre
+              class="bg-gray-900 text-gray-100 p-4 rounded overflow-x-auto"><code>{{ currentCodeSnippet }}</code></pre>
+          </div>
+        </div>
+        <div v-else class="flex items-center justify-center h-full text-gray-400">
+          <p>Select an {{ itemType }} from the list to visualize it and get the integration code.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

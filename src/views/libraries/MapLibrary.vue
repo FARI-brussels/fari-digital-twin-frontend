@@ -1,35 +1,3 @@
-<template>
-  <LibraryBase
-    title="Map Layer Library"
-    itemType="map"
-    fetchUrl="/maps-manager/all"
-    :viewerComponent="MapViewer"
-    :uploadComponent="UploadMapLayer"
-    :codeSnippets="codeSnippets"
-    :deleteItem="deleteMapLayer"
-  >
-    <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
-       <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="provider-group">
-          <h2 class="provider-name">{{ provider }}</h2>
-          <ul class="asset-list">
-            <li
-              v-for="layer in layers"
-              :key="layer.layer"
-              class="asset-item"
-              :class="{ 'selected': selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url }"
-              @click="selectItem(layer)"
-            >
-              <div class="layer-info">
-                <span class="layer-description">{{ layer.description }}</span>
-              </div>
-              <button @click.stop="deleteItem(layer)" class="delete-btn">Delete</button>
-            </li>
-          </ul>
-        </div>
-    </template>
-  </LibraryBase>
-</template>
-
 <script setup>
 import { computed } from 'vue';
 import { deleteMapLayer as apiDeleteMapLayer } from '@/lib/api';
@@ -94,43 +62,23 @@ const codeSnippets = {
 };
 </script>
 
-<style scoped>
-.provider-group {
-  margin-bottom: 20px;
-}
-.provider-name {
-  font-size: 1.2em;
-  font-weight: bold;
-  padding: 10px;
-  background-color: #e9ecef;
-  border-bottom: 1px solid #ccc;
-}
-.asset-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-.asset-item:hover {
-  background-color: #f0f0f0;
-}
-.asset-item.selected {
-  background-color: #e0eaf6;
-}
-.layer-description {
-  font-weight: bold;
-}
-.delete-btn {
-  background-color: #ff4d4d;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.delete-btn:hover {
-  background-color: #cc0000;
-}
-</style> 
+<template>
+  <LibraryBase title="Map Layer Library" itemType="map" fetchUrl="/maps-manager/all" :viewerComponent="MapViewer"
+    :uploadComponent="UploadMapLayer" :codeSnippets="codeSnippets" :deleteItem="deleteMapLayer">
+    <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
+      <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="mb-5">
+        <h2 class="text-lg font-bold bg-gray-100 px-4 py-2 border-b">{{ provider }}</h2>
+        <ul>
+          <li v-for="layer in layers" :key="layer.layer"
+            class="flex justify-between items-center px-4 py-2 border-b cursor-pointer hover:bg-gray-100"
+            :class="{ 'bg-blue-50': selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url }"
+            @click="selectItem(layer)">
+            <div class="font-bold">{{ layer.description }}</div>
+            <button @click.stop="deleteItem(layer)"
+              class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">Delete</button>
+          </li>
+        </ul>
+      </div>
+    </template>
+  </LibraryBase>
+</template>

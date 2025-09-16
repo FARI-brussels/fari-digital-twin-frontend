@@ -1,31 +1,3 @@
-<template>
-  <LibraryBase
-    title="Asset Library"
-    itemType="asset"
-    fetchUrl="/assets-manager"
-    deleteUrlBase="/assets-manager/delete"
-    :viewerComponent="AssetViewer"
-    :uploadComponent="UploadAsset"
-    :codeSnippets="codeSnippets"
-    :transformData="transformAssetData"
-  >
-    <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
-      <li
-        v-for="item in items"
-        :key="item.url"
-        class="asset-item"
-        :class="{ 'selected': selectedItem && selectedItem.url === item.url }"
-        @click="selectItem(item)"
-      >
-        <div class="asset-info">
-          <span class="asset-name">{{ item.name }}</span>
-        </div>
-        <button @click.stop="deleteItem(item)" class="delete-btn">Delete</button>
-      </li>
-    </template>
-  </LibraryBase>
-</template>
-
 <script setup>
 import LibraryBase from '../../components/LibraryBase.vue';
 import AssetViewer from '../../components/AssetViewer.vue';
@@ -72,33 +44,18 @@ const codeSnippets = {
 };
 </script>
 
-<style scoped>
-.asset-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-.asset-item:hover {
-  background-color: #f0f0f0;
-}
-.asset-item.selected {
-  background-color: #e0eaf6;
-}
-.asset-name {
-  font-weight: bold;
-}
-.delete-btn {
-  background-color: #ff4d4d;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.delete-btn:hover {
-  background-color: #cc0000;
-}
-</style> 
+<template>
+  <LibraryBase title="Asset Library" itemType="asset" fetchUrl="/assets-manager" deleteUrlBase="/assets-manager/delete"
+    :viewerComponent="AssetViewer" :uploadComponent="UploadAsset" :codeSnippets="codeSnippets"
+    :transformData="transformAssetData">
+    <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
+      <li v-for="item in items" :key="item.url"
+        class="flex justify-between items-center px-4 py-2 border-b cursor-pointer hover:bg-gray-100"
+        :class="{ 'bg-blue-50': selectedItem && selectedItem.url === item.url }" @click="selectItem(item)">
+        <div class="font-bold">{{ item.name }}</div>
+        <button @click.stop="deleteItem(item)"
+          class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">Delete</button>
+      </li>
+    </template>
+  </LibraryBase>
+</template>

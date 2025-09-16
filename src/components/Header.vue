@@ -1,14 +1,12 @@
-<script setup lang="ts">
-
-import {Button} from "@/components/ui/button";
+<script setup>
+import { Button } from "@/components/ui/button";
 import FariLogo from "@/assets/FariLogo.vue";
 </script>
 
 <template>
-  <div class="flex flex-row w-full items-center justify-between py-4 px-25 text-white bg-[#2250c6]">
+  <div class="flex flex-row w-full items-center justify-between py-4 px-6 text-white bg-blue-700">
     <router-link to="/">
-      <FariLogo/>
-
+      <FariLogo />
     </router-link>
     <div class="flex gap-2">
       <Button variant="ghost" as-child class="text-white hover:bg-white/10 hover:text-white">
@@ -24,7 +22,3 @@ import FariLogo from "@/assets/FariLogo.vue";
     </div>
   </div>
 </template>
-
-<style scoped>
-
-</style>

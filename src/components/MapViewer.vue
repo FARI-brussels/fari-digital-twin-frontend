@@ -1,12 +1,3 @@
-<template>
-  <div class="map-viewer-wrapper">
-      <div ref="cesiumContainer" class="viewer-container"></div>
-      <div v-if="legendUrl" class="legend-container">
-        <img :src="legendUrl" alt="Map Legend" />
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import * as Cesium from 'cesium';
@@ -47,7 +38,6 @@ const initializeViewer = () => {
       sceneModePicker: false,
       navigationHelpButton: false,
     });
-
     viewer.camera.setView({
       destination: Cesium.Rectangle.fromDegrees(4.25, 50.75, 4.45, 50.95)
     });
@@ -59,25 +49,23 @@ const updateMapLayer = (newMapLayer) => {
     if (currentImageryLayer) {
       viewer.imageryLayers.remove(currentImageryLayer, false);
     }
-    
     currentImageryLayer = viewer.imageryLayers.addImageryProvider(
-        new Cesium.WebMapServiceImageryProvider({
+      new Cesium.WebMapServiceImageryProvider({
         url: newMapLayer.url,
         layers: newMapLayer.layer,
-          parameters: {
-            service: 'WMS',
-            transparent: true,
-            format: 'image/png'
-          },
-        })
-      );
-    }
+        parameters: {
+          service: 'WMS',
+          transparent: true,
+          format: 'image/png'
+        },
+      })
+    );
+  }
 };
 
 watch(() => props.mapLayer, (newMapLayer) => {
   updateMapLayer(newMapLayer);
 }, { immediate: true });
-
 
 onMounted(() => {
   initializeViewer();
@@ -90,32 +78,13 @@ onBeforeUnmount(() => {
     viewer = null;
   }
 });
-
 </script>
 
-<style scoped>
-.map-viewer-wrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background-color: #000;
-}
-.viewer-container {
-  width: 100%;
-  height: 100%;
-}
-.legend-container {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 1005;
-}
-.legend-container img {
-  max-width: 200px;
-  max-height: 300px;
-  display: block;
-}
-</style> 
+<template>
+  <div class="w-full h-full relative bg-black">
+    <div ref="cesiumContainer" class="w-full h-full"></div>
+    <div v-if="legendUrl" class="absolute bottom-5 right-5 bg-white/80 p-2 rounded z-[1005]">
+      <img :src="legendUrl" alt="Map Legend" class="max-w-[200px] max-h-[300px] block" />
+    </div>
+  </div>
+</template>

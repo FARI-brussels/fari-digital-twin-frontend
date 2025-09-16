@@ -1,39 +1,3 @@
-<template>
-  <div class="demo-gallery">
-    <div class="header">
-      <h1>Demo Examples Gallery</h1>
-      <p class="subtitle">Explore different combinations of 3D tilesets and map layers</p>
-    </div>
-    
-    <div class="examples-grid">
-      <div v-for="example in examples" :key="example.id" class="example-card">
-        <div class="example-preview">
-          <div class="preview-placeholder">
-            <div class="preview-icon">🌍</div>
-          </div>
-        </div>
-        <div class="example-info">
-          <h3>{{ example.name }}</h3>
-          <p class="example-description">{{ example.description }}</p>
-          <div class="layer-tags">
-            <span v-for="layer in example.layers.filter(l => l.enabled)" :key="layer.id" 
-                  class="layer-tag" :class="layer.type">
-              {{ layer.name }}
-            </span>
-          </div>
-        </div>
-        <div class="example-actions">
-          <button @click="openExample(example)" class="view-button">
-            View Example
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <ExampleViewer v-if="selectedExample" :example="selectedExample" @close="selectedExample = null" />
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue';
 import ExampleViewer from '../components/ExampleViewer.vue';
@@ -93,7 +57,7 @@ const examples = ref([
         type: 'tileset',
         url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-15-03/tileset.json',
         enabled: true,
-        
+
       }
     ],
   },
@@ -146,149 +110,33 @@ const openExample = (example) => {
 };
 </script>
 
-<style scoped>
-.demo-gallery {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.header h1 {
-  color: #42b983;
-  margin: 0 0 10px 0;
-  font-size: 2.5em;
-}
-
-.subtitle {
-  color: #666;
-  font-size: 1.1em;
-  margin: 0;
-}
-
-.examples-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 30px;
-  margin-bottom: 40px;
-}
-
-.example-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.example-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.example-preview {
-  height: 200px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.preview-placeholder {
-  text-align: center;
-}
-
-.preview-icon {
-  font-size: 4em;
-  opacity: 0.8;
-}
-
-.example-info {
-  padding: 20px;
-}
-
-.example-info h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 1.4em;
-}
-
-.example-description {
-  color: #666;
-  line-height: 1.5;
-  margin: 0 0 15px 0;
-  font-size: 0.95em;
-}
-
-.layer-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-
-.layer-tag {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8em;
-  font-weight: 500;
-  color: white;
-}
-
-.layer-tag.basemap {
-  background-color: #6c757d;
-}
-
-.layer-tag.tileset {
-  background-color: #42b983;
-}
-
-.layer-tag.wms {
-  background-color: #ff6b6b;
-}
-
-.example-actions {
-  padding: 0 20px 20px 20px;
-}
-
-.view-button {
-  width: 100%;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #42b983 0%, #369f77 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1em;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.view-button:hover {
-  background: linear-gradient(135deg, #369f77 0%, #2d7f63 100%);
-  transform: translateY(-2px);
-}
-
-.view-button:active {
-  transform: translateY(0);
-}
-
-@media (max-width: 768px) {
-  .examples-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .header h1 {
-    font-size: 2em;
-  }
-  
-  .demo-gallery {
-    padding: 15px;
-  }
-}
-</style> 
+<template>
+  <div class="max-w-6xl mx-auto p-5">
+    <div class="text-center mb-10">
+      <h1 class="text-4xl font-bold text-green-600 mb-2">Demo Examples Gallery</h1>
+      <p class="text-gray-500 text-lg">Explore different combinations of 3D tilesets and map layers</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+      <div v-for="example in examples" :key="example.id"
+        class="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden">
+        <div class="h-48 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div class="text-5xl opacity-80">🌍</div>
+        </div>
+        <div class="p-5">
+          <h3 class="text-xl font-bold mb-2">{{ example.name }}</h3>
+          <p class="text-gray-600 mb-3">{{ example.description }}</p>
+          <div class="flex flex-wrap gap-2 mb-3">
+            <span v-for="layer in example.layers.filter(l => l.enabled)" :key="layer.id"
+              :class="['px-2 py-1 rounded text-xs font-semibold text-white', layer.type === 'basemap' ? 'bg-gray-600' : layer.type === 'tileset' ? 'bg-green-600' : 'bg-red-500']">
+              {{ layer.name }}
+            </span>
+          </div>
+          <button @click="openExample(example)"
+            class="w-full py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition">View
+            Example</button>
+        </div>
+      </div>
+    </div>
+    <ExampleViewer v-if="selectedExample" :example="selectedExample" @close="selectedExample = null" />
+  </div>
+</template>

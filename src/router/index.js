@@ -6,46 +6,52 @@ import DemoView from '../views/DemoView.vue';
 import HomePage from "../views/HomePage.vue";
 import LibraryLayout from "../components/LibraryLayout.vue";
 import ApiDocView from "@/views/ApiDocView.vue";
+import RealtimeViewer from "@/components/RealtimeViewer.vue";
 
 const routes = [
-  { path: '/', name: 'Home', component: HomePage },
-  { path: '/doc', name: 'API Documentation', component: ApiDocView },
+    { path: '/', name: 'Home', component: HomePage },
+    { path: '/doc', name: 'API Documentation', component: ApiDocView },
 
-  {
-    path: '/library',
-    component: LibraryLayout,
-    children: [
-      {
-        path: 'assets',
-        name: 'AssetLibrary',
-        component: AssetLibrary,
-      },
-      {
-        path: 'maps',
-        name: 'MapLibrary',
-        component: MapLibrary,
-      },
-      {
-        path: 'tilesets',
-        name: 'TilesetLibrary',
-        component: TilesetLibrary,
-      },
-      {
-        path: 'demo',
-        name: 'Demo',
-        component: DemoView,
-      },
-      {
-        path: '',
-        redirect: { name: 'AssetLibrary' }
-      }
-    ]
-  }
+    {
+        path: '/library',
+        component: LibraryLayout,
+        children: [
+            {
+                path: 'assets',
+                name: 'AssetLibrary',
+                component: AssetLibrary,
+            },
+            {
+                path: 'maps',
+                name: 'MapLibrary',
+                component: MapLibrary,
+            },
+            {
+                path: 'tilesets',
+                name: 'TilesetLibrary',
+                component: TilesetLibrary,
+            },
+            {
+                path: 'realtime',
+                name: 'RealtimeViewer.vue',
+                component: RealtimeViewer,
+            },
+            {
+                path: 'demo',
+                name: 'Demo',
+                component: DemoView,
+            },
+            {
+                path: '',
+                redirect: { name: 'AssetLibrary' }
+            }
+        ]
+    }
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes,
+    history: createWebHistory(),
+    routes,
 });
 
 export default router; 

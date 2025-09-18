@@ -1,37 +1,8 @@
-<template>
-  <div class="upload-form">
-    <h2>Add New Map Layer</h2>
-    <form @submit.prevent="addLayer">
-      <div class="form-group">
-        <label for="url">Provider URL:</label>
-        <input type="url" id="url" v-model="url" placeholder="e.g., http://example.com/wms" required>
-      </div>
-      <div class="form-group">
-        <label for="layer">Layer Name/ID:</label>
-        <input type="text" id="layer" v-model="layer" placeholder="e.g., MyLayerName" required>
-      </div>
-      <div class="form-group">
-        <label for="description">Description:</label>
-        <textarea id="description" v-model="description" rows="3" required></textarea>
-      </div>
-      <div class="form-actions">
-        <button type="submit" :disabled="submitting">
-          {{ submitting ? 'Adding...' : 'Add Layer' }}
-        </button>
-        <button type="button" @click="$emit('cancel')" class="cancel-btn">Cancel</button>
-      </div>
-      <div v-if="error" class="error">{{ error }}</div>
-      <div v-if="successMessage" class="success">{{ successMessage }}</div>
-    </form>
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue';
 import { postItem } from '@/lib/api';
 
 const emit = defineEmits(['uploaded', 'cancel']);
-
 const url = ref('');
 const layer = ref('');
 const description = ref('');
@@ -39,12 +10,10 @@ const error = ref(null);
 const successMessage = ref('');
 const submitting = ref(false);
 
-
 const addLayer = async () => {
   error.value = null;
   successMessage.value = '';
   submitting.value = true;
-
   try {
     await postItem('/maps-manager/add_layer', {
       layer: {
@@ -53,16 +22,13 @@ const addLayer = async () => {
         description: description.value,
       }
     });
-
     successMessage.value = 'Map layer added successfully!';
     url.value = '';
     layer.value = '';
     description.value = '';
-
     setTimeout(() => {
-        emit('uploaded');
+      emit('uploaded');
     }, 1500);
-
   } catch (err) {
     console.error('Error adding map layer:', err);
     error.value = 'Failed to add map layer. Please check the details and try again.';
@@ -72,71 +38,34 @@ const addLayer = async () => {
 };
 </script>
 
-<style scoped>
-.upload-form {
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  max-width: 500px;
-  margin: 20px auto;
-}
-h2 {
-  text-align: center;
-  color: #333;
-}
-.form-group {
-  margin-bottom: 15px;
-}
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #42b983;
-  color: white;
-  font-weight: bold;
-}
-button:disabled {
-  background-color: #a5d6b8;
-  cursor: not-allowed;
-}
-button:hover:not(:disabled) {
-  background-color: #369f77;
-}
-.cancel-btn {
-    background-color: #f44336;
-}
-.cancel-btn:hover:not(:disabled) {
-    background-color: #d32f2f;
-}
-.error {
-  color: red;
-  margin-top: 15px;
-  text-align: center;
-}
-.success {
-  color: green;
-  margin-top: 15px;
-  text-align: center;
-}
-</style> 
+<template>
+  <div class="p-5 border rounded-lg bg-gray-50 max-w-lg mx-auto mt-5">
+    <h2 class="text-center text-xl font-bold text-gray-800 mb-5">Add New Map Layer</h2>
+    <form @submit.prevent="addLayer">
+      <div class="mb-4">
+        <label for="url" class="block font-bold mb-2">Provider URL:</label>
+        <input type="url" id="url" v-model="url" placeholder="e.g., http://example.com/wms" required
+          class="w-full px-2 py-1 border rounded" />
+      </div>
+      <div class="mb-4">
+        <label for="layer" class="block font-bold mb-2">Layer Name/ID:</label>
+        <input type="text" id="layer" v-model="layer" placeholder="e.g., MyLayerName" required
+          class="w-full px-2 py-1 border rounded" />
+      </div>
+      <div class="mb-4">
+        <label for="description" class="block font-bold mb-2">Description:</label>
+        <textarea id="description" v-model="description" rows="3" required
+          class="w-full px-2 py-1 border rounded"></textarea>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="submit" :disabled="submitting"
+          class="px-4 py-2 rounded bg-green-600 text-white font-bold disabled:bg-green-300">{{ submitting ? 'Adding...'
+            : 'Add Layer' }}</button>
+        <button type="button" @click="$emit('cancel')"
+          class="px-4 py-2 rounded bg-red-600 text-white font-bold">Cancel</button>
+      </div>
+      <div v-if="error" class="text-red-600 mt-4 text-center">{{ error }}</div>
+      <div v-if="successMessage" class="text-green-600 mt-4 text-center">{{ successMessage }}</div>
+    </form>
+  </div>
+</template>

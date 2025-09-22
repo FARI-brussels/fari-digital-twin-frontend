@@ -1,3 +1,21 @@
+<template>
+  <div class="tileset-viewer-wrapper">
+      <div ref="viewerContainer" class="viewer-container"></div>
+      <div class="controls-overlay">
+        <label class="wms-toggle">
+          <input 
+            type="checkbox" 
+            v-model="showWmsLayer" 
+            @change="toggleWmsLayer"
+          />
+          <span>UrbIS Base Map</span>
+        </label>
+      </div>
+      <div v-if="loading" class="loading-indicator">Loading Tileset...</div>
+      <div v-if="error" class="error-message">{{ error }}</div>
+  </div>
+</template>
+
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import * as Cesium from 'cesium';
@@ -22,7 +40,7 @@ const initializeViewer = () => {
   if (viewerContainer.value && !viewer) {
     // Set Cesium Ion access token
     Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhY2E3ZDhlNC03Yjc0LTQzM2QtYmI5My0zYWQ3NjIwOTk0OTciLCJpZCI6Mjc4NzM4LCJpYXQiOjE3NDA0ODg1MjB9.VsZjL6pbKSwR_SBbxUq-KRweOU_P3R8DKjSpeD0EICY';
-
+    
     viewer = new Cesium.Viewer(viewerContainer.value, {
       timeline: false,
       animation: false,
@@ -37,14 +55,14 @@ const initializeViewer = () => {
         url: 'https://a.tile.openstreetmap.org/'
       }),
     });
-
+    
     // Set terrain using the scene method
     viewer.scene.setTerrain(
       new Cesium.Terrain(
         Cesium.CesiumTerrainProvider.fromIonAssetId(3340034),
       ),
     );
-
+    
     // Add WMS layer by default
     addWmsLayer();
   }
@@ -52,16 +70,18 @@ const initializeViewer = () => {
 
 const addWmsLayer = () => {
   if (!viewer || wmsImageryLayer) return;
+  
   try {
     const wmsProvider = new Cesium.WebMapServiceImageryProvider({
-      url: 'https://geoservices-urbis.irisnet.be/geoserver/ows',
-      layers: 'BaseMaps:UrbISNotLabeledColor',
+      url: 'https://geoservices-urbis.irisnet.be/geoserver/BaseMaps/ows',
+      layers: 'UrbISNotLabeledGray',
       parameters: {
         service: 'WMS',
         format: 'image/png',
         transparent: true,
       }
     });
+    
     wmsImageryLayer = viewer.imageryLayers.addImageryProvider(wmsProvider);
   } catch (err) {
     console.error('Failed to add WMS layer:', err);
@@ -85,15 +105,20 @@ const toggleWmsLayer = () => {
 
 const loadTileset = async (url) => {
   if (!viewer || !url) return;
+
   loading.value = true;
   error.value = null;
+
   try {
     if (currentTileset) {
       viewer.scene.primitives.remove(currentTileset);
     }
+    
     const tileset = await Cesium.Cesium3DTileset.fromUrl(url);
     currentTileset = viewer.scene.primitives.add(tileset);
+
     await viewer.zoomTo(tileset);
+
   } catch (err) {
     console.error('Failed to load tileset:', err);
     error.value = 'Error loading tileset. The URL might be invalid or inaccessible.';
@@ -119,22 +144,63 @@ onBeforeUnmount(() => {
     viewer = null;
   }
 });
+
 </script>
 
-<template>
-  <div class="w-full h-full relative bg-black">
-    <div ref="viewerContainer" class="w-full h-full"></div>
-    <div class="absolute top-2 right-2 z-10 bg-black/80 p-2 rounded flex items-center">
-      <label class="flex items-center text-white text-sm cursor-pointer select-none">
-        <input type="checkbox" v-model="showWmsLayer" @change="toggleWmsLayer" class="mr-2 cursor-pointer" />
-        <span>UrbIS Base Map</span>
-      </label>
-    </div>
-    <div v-if="loading"
-      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/80 px-4 py-2 rounded z-10">
-      Loading Tileset...</div>
-    <div v-if="error"
-      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-red-200 bg-black/80 px-4 py-2 rounded z-10">
-      {{ error }}</div>
-  </div>
-</template>
+<style scoped>
+.tileset-viewer-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #000;
+}
+
+.viewer-container {
+  width: 100%;
+  height: 100%;
+}
+
+.controls-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.wms-toggle {
+  display: flex;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wms-toggle input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.wms-toggle span {
+  cursor: pointer;
+}
+
+.loading-indicator, .error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  background-color: rgba(0,0,0,0.8);
+  padding: 15px;
+  border-radius: 5px;
+  z-index: 10;
+}
+
+.error-message {
+  color: #ffcccc;
+}
+</style> 

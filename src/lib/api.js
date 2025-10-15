@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken } from '@josempgon/vue-keycloak';
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
@@ -6,6 +7,22 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+apiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await getToken();
+      if (token) {
+        config.headers = config.headers ?? {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (err) {
+      // Ignore token retrieval errors so unauthenticated calls can still proceed when needed.
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 export const fetchItems = (fetchUrl) => {
   return apiClient.get(fetchUrl);

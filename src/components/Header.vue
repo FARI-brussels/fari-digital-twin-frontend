@@ -12,20 +12,53 @@ const {
   username,
 } = useKeycloak();
 
-const displayName = computed(() =>
-  decodedToken.value?.name || decodedToken.value?.preferred_username || username.value || ''
-);
+const publicOrigin = window.location.origin;
+
+const normalizePath = (value) => {
+  if (!value || value === '/') {
+    return '';
+  }
+  return value.startsWith('/') ? value : `/${value}`;
+};
+
+const normalizedLoginPath = normalizePath(import.meta.env.VITE_KEYCLOAK_REDIRECT_PATH ?? '/callback');
+const keycloakRedirectUri = `${publicOrigin}${normalizedLoginPath}`;
+
+const logoutSetting = import.meta.env.VITE_KEYCLOAK_LOGOUT_REDIRECT_PATH;
+const normalizedLogoutPath = logoutSetting === undefined
+  ? normalizedLoginPath
+  : logoutSetting?.toLowerCase() === 'none'
+    ? null
+    : normalizePath(logoutSetting);
+const logoutRedirectUri = normalizedLogoutPath === null
+  ? null
+  : `${publicOrigin}${normalizedLogoutPath}`;
+
+const displayName = computed(() => {
+  const kc = keycloak.value;
+  const tokenPayload = decodedToken.value || kc?.tokenParsed;
+  return (
+    tokenPayload?.name ||
+    tokenPayload?.preferred_username ||
+    username.value ||
+    ''
+  );
+});
 
 const handleLogin = () => {
-  keycloak.value?.login();
+  keycloak.value?.login({ redirectUri: keycloakRedirectUri });
 };
 
 const handleRegister = () => {
-  keycloak.value?.register();
+  keycloak.value?.register({ redirectUri: keycloakRedirectUri });
 };
 
 const handleLogout = () => {
-  keycloak.value?.logout({ redirectUri: window.location.origin });
+  if (logoutRedirectUri) {
+    keycloak.value?.logout({ redirectUri: logoutRedirectUri });
+  } else {
+    keycloak.value?.logout();
+  }
 };
 </script>
 
@@ -52,7 +85,7 @@ const handleLogout = () => {
         </Button>
       </template>
       <template v-else>
-        <span class="text-white text-sm">{{ displayName || 'Authenticated' }}</span>
+        <span class="text-white text-sm font-medium">Username : {{ displayName || 'Authenticated' }}</span>
         <Button variant="ghost" class="text-white hover:bg-white/10 hover:text-white" @click="handleLogout">
           Sign out
         </Button>

@@ -8,6 +8,13 @@ import LibraryLayout from "../components/LibraryLayout.vue";
 import ApiDocView from "@/views/ApiDocView.vue";
 import RealtimeViewer from "@/components/RealtimeViewer.vue";
 
+const rawCallbackPath = import.meta.env.VITE_KEYCLOAK_REDIRECT_PATH ?? '/callback';
+const callbackPath = !rawCallbackPath || rawCallbackPath === '/'
+  ? ''
+  : rawCallbackPath.startsWith('/')
+    ? rawCallbackPath
+    : `/${rawCallbackPath}`;
+
 const routes = [
     { path: '/', name: 'Home', component: HomePage },
     { path: '/doc', name: 'API Documentation', component: ApiDocView },
@@ -48,6 +55,14 @@ const routes = [
         ]
     }
 ];
+
+if (callbackPath) {
+    routes.push({
+        path: callbackPath,
+        name: 'AuthCallback',
+        component: () => import('../views/AuthCallback.vue'),
+    });
+}
 
 const router = createRouter({
     history: createWebHistory(),

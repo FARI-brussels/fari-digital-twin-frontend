@@ -1,7 +1,7 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import { getToken } from '@josempgon/vue-keycloak';
 
-export const apiClient = axios.create({
+export const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -24,11 +24,11 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-export const fetchItems = (fetchUrl) => {
+export const fetchItems = (fetchUrl: string) => {
   return apiClient.get(fetchUrl);
 };
 
-export const uploadItem = (uploadUrl, formData) => {
+export const uploadItem = (uploadUrl: string, formData: FormData) => {
   return apiClient.post(uploadUrl, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -36,16 +36,16 @@ export const uploadItem = (uploadUrl, formData) => {
   });
 };
 
-export const postItem = (postUrl, data) => {
+export const postItem = (postUrl: string, data: any) => {
   return apiClient.post(postUrl, data);
 };
 
-export const deleteItem = (deleteUrlBase, item) => {
+export const deleteItem = (deleteUrlBase: string, item: { url: string }) => {
   const url = `${deleteUrlBase}?url=${encodeURIComponent(item.url)}`;
   return apiClient.delete(url);
 };
 
-export const deleteMapLayer = (deleteUrlBase, layer) => {
+export const deleteMapLayer = (deleteUrlBase: string, layer: { url: string; layer: string }) => {
   const url = `${deleteUrlBase}?url=${encodeURIComponent(layer.url)}&layer=${encodeURIComponent(layer.layer)}`;
   return apiClient.delete(url);
-}; 
+};

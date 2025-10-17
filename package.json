@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.2.2",
+    "@deck.gl/layers": "^9.2.2",
+    "@deck.gl/mapbox": "^9.2.2",
     "@fari-brussels/style": "^1.0.4",
     "@giro3d/giro3d": "^0.43.0",
     "@josempgon/vue-keycloak": "^3.3.2",
@@ -18,7 +21,9 @@
     "cesium": "^1.132.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "deck.gl": "^9.2.2",
     "lucide-vue-next": "^0.523.0",
+    "maplibre-gl": "^5.9.0",
     "reka-ui": "^2.5.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.10",

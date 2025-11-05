@@ -8,13 +8,17 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
+
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await getToken();
-      if (token) {
-        config.headers = config.headers ?? {};
-        config.headers.Authorization = `Bearer ${token}`;
+      // Only add Keycloak token if Authorization header is not already set
+      if (!config.headers?.Authorization) {
+        const token = await getToken();
+        if (token) {
+          config.headers = config.headers ?? {};
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
     } catch (err) {
       // Ignore token retrieval errors so unauthenticated calls can still proceed when needed.

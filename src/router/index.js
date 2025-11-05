@@ -2,11 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 import AssetLibrary from '../views/libraries/AssetLibrary.vue';
 import MapLibrary from '../views/libraries/MapLibrary.vue';
 import TilesetLibrary from '../views/libraries/TilesetLibrary.vue';
+import RealtimeLibrary from '../views/libraries/RealtimeLibrary.vue';
 import DemoView from '../views/DemoView.vue';
 import HomePage from "../views/HomePage.vue";
 import LibraryLayout from "../components/LibraryLayout.vue";
 import ApiDocView from "@/views/ApiDocView.vue";
-import RealtimeViewer from "@/components/RealtimeViewer.vue";
 
 const rawCallbackPath = import.meta.env.VITE_KEYCLOAK_REDIRECT_PATH ?? '/callback';
 const callbackPath = !rawCallbackPath || rawCallbackPath === '/'
@@ -40,8 +40,8 @@ const routes = [
             },
             {
                 path: 'realtime',
-                name: 'RealtimeViewer.vue',
-                component: RealtimeViewer,
+                name: 'RealtimeLibrary',
+                component: RealtimeLibrary,
             },
             {
                 path: 'demo',

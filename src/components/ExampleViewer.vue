@@ -25,6 +25,7 @@ onMounted(async () => {
   if (!cesiumContainer.value) return;
 
   try {
+    Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
     viewer = new Cesium.Viewer(cesiumContainer.value, {
       terrain: Cesium.Terrain.fromWorldTerrain(),
       animation: false,
@@ -51,19 +52,34 @@ onMounted(async () => {
     // Load tilesets
     const tilesetLayers = props.example.layers.filter(layer => layer.type === 'tileset' && layer.enabled);
     if (tilesetLayers.length > 0) {
-      const promises = tilesetLayers.map(layer => Cesium.Cesium3DTileset.fromUrl(layer.url));
-      const loadedTilesets = await Promise.all(promises);
+      const results = await Promise.allSettled(
+        tilesetLayers.map(layer => Cesium.Cesium3DTileset.fromUrl(layer.url))
+      );
 
-      loadedTilesets.forEach((loadedTs, index) => {
+      const successfulTilesets = [];
+
+      results.forEach((result, index) => {
         const layerInfo = tilesetLayers[index];
-        viewer.scene.primitives.add(loadedTs);
-        if (layerInfo.style) {
-          loadedTs.style = layerInfo.style;
+        if (result.status === 'fulfilled') {
+          const loadedTs = result.value;
+          viewer.scene.primitives.add(loadedTs);
+          if (layerInfo.style) {
+            loadedTs.style =
+              layerInfo.style instanceof Cesium.Cesium3DTileStyle
+                ? layerInfo.style
+                : new Cesium.Cesium3DTileStyle(layerInfo.style);
+          }
+          successfulTilesets.push(loadedTs);
+        } else {
+          console.error(
+            `Failed to load tileset ${layerInfo?.name || layerInfo?.id || index}:`,
+            result.reason
+          );
         }
       });
 
-      if (loadedTilesets.length > 0) {
-        await viewer.zoomTo(loadedTilesets[0]);
+      if (successfulTilesets.length > 0) {
+        await viewer.zoomTo(successfulTilesets[0]);
       }
     }
 

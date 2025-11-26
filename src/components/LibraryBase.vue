@@ -11,7 +11,9 @@ const props = defineProps({
   uploadComponent: Object,
   codeSnippets: Object,
   transformData: Function,
-  deleteItem: Function // Optional: for custom delete logic like in maps
+  deleteItem: Function, // Optional: for custom delete logic like in maps
+  staticItems: Array, // Optional: for static data instead of fetching
+  customFetch: Function // Optional: custom fetch function
 });
 
 const items = ref([]);
@@ -19,13 +21,14 @@ const selectedItem = ref(null);
 const error = ref(null);
 const loading = ref(true);
 const showUploadPage = ref(false);
-const selectedLanguage = ref('js'); // 'js' or 'unity'
+const selectedLanguage = ref('js'); // 'js' or 'unity' or 'react'
 
 const viewerProps = computed(() => {
   if (!selectedItem.value) return {};
   if (props.itemType === 'asset') return { assetUrl: selectedItem.value.url };
   if (props.itemType === 'map') return { mapLayer: selectedItem.value };
   if (props.itemType === 'tileset') return { tilesetUrl: selectedItem.value.url };
+  if (props.itemType === 'dataset') return { dataset: selectedItem.value };
   return {};
 });
 
@@ -39,6 +42,33 @@ const fetchItems = async () => {
   loading.value = true;
   error.value = null;
   try {
+    // Use static items if provided
+    if (props.staticItems) {
+      items.value = props.staticItems;
+      if (items.value.length > 0) {
+        selectedItem.value = items.value[0];
+      }
+      loading.value = false;
+      return;
+    }
+
+    // Use custom fetch function if provided
+    if (props.customFetch) {
+      const response = await props.customFetch();
+      const data = response.data;
+      if (Array.isArray(data)) {
+        items.value = props.transformData ? props.transformData(data) : data;
+        if (items.value.length > 0) {
+          selectedItem.value = items.value[0];
+        }
+      } else {
+        items.value = [];
+      }
+      loading.value = false;
+      return;
+    }
+
+    // Default API fetch
     const response = await apiFetchItems(props.fetchUrl);
     const data = response.data;
     if (Array.isArray(data)) {
@@ -89,14 +119,14 @@ onMounted(fetchItems);
 </script>
 
 <template>
-  <div class="h-screen flex">
+  <div class="h-full flex">
     <component :is="uploadComponent" v-if="showUploadPage" @uploaded="handleItemUploaded"
       @cancel="showUploadPage = false" />
-    <div v-else class="flex w-full">
+    <div v-else class="flex w-full h-full">
       <div class="w-2/5 p-5 border-r border-gray-300 overflow-y-auto bg-gray-50">
         <div class="flex justify-between items-center mb-5">
           <h1 class="text-gray-800 text-xl font-bold">{{ title }}</h1>
-          <button @click="showUploadPage = true"
+          <button v-if="uploadComponent" @click="showUploadPage = true"
             class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700">Upload {{ itemType }}</button>
         </div>
         <div v-if="error" class="text-red-600 mb-2">{{ error }}</div>
@@ -108,25 +138,26 @@ onMounted(fetchItems);
             :deleteItem="deleteItem"></slot>
         </ul>
       </div>
-      <div class="w-3/5 p-5 flex flex-col">
-        <div v-if="selectedItem" class="flex flex-col h-full">
-          <div class="flex-grow bg-gray-200 mb-5">
+      <div class="w-3/5 p-5 flex flex-col overflow-hidden">
+        <div v-if="selectedItem" class="flex flex-col h-full overflow-hidden">
+          <div class="bg-gray-200 mb-5 flex-[3] min-h-0">
             <component :is="viewerComponent" v-bind="viewerProps" />
           </div>
-          <div>
-            <div class="flex justify-between items-center mb-2">
+          <div class="flex-[2] flex flex-col min-h-0 overflow-hidden">
+            <div class="flex justify-between items-center mb-2 flex-shrink-0">
               <h3 class="font-bold">Code Example</h3>
               <div>
                 <button
-                  :class="['px-2 py-1 border rounded mr-2', selectedLanguage === 'js' ? 'bg-gray-300 font-bold' : 'bg-gray-100']"
-                  @click="selectedLanguage = 'js'">CesiumJS</button>
-                <button
-                  :class="['px-2 py-1 border rounded', selectedLanguage === 'unity' ? 'bg-gray-300 font-bold' : 'bg-gray-100']"
-                  @click="selectedLanguage = 'unity'">Cesium Unity</button>
+                  v-for="(snippet, lang) in codeSnippets"
+                  :key="lang"
+                  :class="['px-2 py-1 border rounded mr-2', selectedLanguage === lang ? 'bg-gray-300 font-bold' : 'bg-gray-100']"
+                  @click="selectedLanguage = lang">
+                  {{ lang === 'js' ? 'JavaScript' : lang === 'unity' ? 'Cesium Unity' : lang === 'react' ? 'React' : lang }}
+                </button>
               </div>
             </div>
             <pre
-              class="bg-gray-900 text-gray-100 p-4 rounded overflow-x-auto"><code>{{ currentCodeSnippet }}</code></pre>
+              class="bg-gray-900 text-gray-100 p-4 rounded overflow-auto flex-1 min-h-0"><code>{{ currentCodeSnippet }}</code></pre>
           </div>
         </div>
         <div v-else class="flex items-center justify-center h-full text-gray-400">

@@ -98,7 +98,7 @@ onBeforeUnmount(() => {
       viewer.entities.remove(currentEntity);
     }
     viewer.destroy();
-    viewer = null;
+
   }
 });
 </script>

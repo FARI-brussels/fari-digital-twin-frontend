@@ -1,162 +1,101 @@
 <script setup lang="ts">
 import LibraryBase from '@/components/LibraryBase.vue';
 import RealtimeViewer from '@/components/RealtimeViewer.vue';
+import { MobilityEndpoints } from '@/lib/api';
 import type { RealtimeDataset, LibraryItem } from '@/types';
+import type { ApiResponse } from '@/types';
 
-// ============================================================================
-// Static Data
-// ============================================================================
+// Transform the endpoints configuration into the list of "datasets"
+// Each endpoint becomes an item in the sidebar list
+const realtimeDatasets: RealtimeDataset[] = Object.keys(MobilityEndpoints).map((key) => ({
+  id: key, // Matches the key in MobilityEndpoints
+  name: formatName(key),
+  description: `Real-time data for ${formatName(key)}`,
+  type: 'realtime',
+  endpoint: MobilityEndpoints[key as keyof typeof MobilityEndpoints],
+}));
 
-const realtimeDatasets: RealtimeDataset[] = [
-  {
-    id: 'stib-vehicles',
-    name: 'STIB Vehicle Positions',
-    description: 'Live positions of STIB vehicles (Metro, Tram, Bus)',
-    endpoint: '/stib/vehicle-position',
-    type: 'vehicle-positions',
-  },
-  {
-    id: 'sncb-trains',
-    name: 'SNCB Train Positions',
-    description: 'Live positions of SNCB trains in Belgium',
-    endpoint: '/sncb/vehicle-position',
-    type: 'vehicle-positions',
-  },
-];
 
-// ============================================================================
-// Code Snippets
-// ============================================================================
-
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
-function getDeckGlSnippet(dataset: LibraryItem): string {
-  const realtimeDataset = dataset as RealtimeDataset;
-  return `
-import { Deck } from '@deck.gl/core';
-import { ScatterplotLayer } from '@deck.gl/layers';
-import { Map } from 'maplibre-gl';
-
-// Initialize MapLibre
-const map = new Map({
-  container: 'map-container',
-  style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-  center: [4.3517, 50.8503],
-  zoom: 12
-});
-
-// Fetch vehicle data
-const response = await fetch('${backendUrl}${realtimeDataset.endpoint}');
-const data = await response.json();
-const vehicles = Array.isArray(data) ? data : data.features || [];
-
-// Create Deck.gl overlay
-const deck = new Deck({
-  canvas: 'deck-canvas',
-  initialViewState: {
-    longitude: 4.3517,
-    latitude: 50.8503,
-    zoom: 12
-  },
-  controller: true,
-  layers: [
-    new ScatterplotLayer({
-      id: 'vehicles',
-      data: vehicles.map(v => ({
-        position: v.geometry.coordinates,
-        color: [255, 50, 50]
-      })),
-      getPosition: d => d.position,
-      getFillColor: d => d.color,
-      getRadius: 10
-    })
-  ]
-});
-`.trim();
+function formatName(key: string): string {
+  // Convert camelCase to Title Case
+  const result = key.replace(/([A-Z])/g, ' $1');
+  return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
-function getReactSnippet(dataset: LibraryItem): string {
-  const realtimeDataset = dataset as RealtimeDataset;
-  // Use array join to prevent bundler from detecting imports in string
-  const imports = [
-    "import { useEffect, useState } from 'react';",
-    "import { Map } from 'react-map-gl';",
-    "import DeckGL from '@deck.gl/react';",
-    "import { ScatterplotLayer } from '@deck.gl/layers';",
-  ].join('\n');
-  return `${imports}
+// Define code snippets generation
+const codeSnippets = {
+  js: (item: LibraryItem) => {
+    const dataset = item as unknown as RealtimeDataset;
+    return `// Fetch ${dataset.name} data
+import { fetchMobilityData } from '@/lib/api';
 
-function VehicleMap() {
-  const [vehicles, setVehicles] = useState([]);
+async function getData() {
+  const response = await fetchMobilityData('${dataset.id}');
+  console.log(response.data);
+}`;
+  },
+  react: (item: LibraryItem) => {
+    const dataset = item as unknown as RealtimeDataset;
+    return `// React Hook for ${dataset.name}
+import { useState, useEffect } from 'react';
+import { fetchMobilityData } from '@/lib/api';
 
-  const fetchVehicles = async () => {
-    const response = await fetch('${backendUrl}${realtimeDataset.endpoint}');
-    const data = await response.json();
-    const vehicleData = Array.isArray(data) ? data : data.features || [];
-    setVehicles(vehicleData.map(v => ({
-      position: v.geometry.coordinates,
-      color: [255, 50, 50]
-    })));
-  };
+export function use${dataset.name.replace(/\s/g, '')}() {
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    fetchVehicles();
+    fetchMobilityData('${dataset.id}').then(res => setData(res.data));
   }, []);
 
-  const layers = [
-    new ScatterplotLayer({
-      id: 'vehicles',
-      data: vehicles,
-      getPosition: d => d.position,
-      getFillColor: d => d.color,
-      getRadius: 10
-    })
-  ];
-
-  return (
-    <DeckGL
-      initialViewState={{
-        longitude: 4.3517,
-        latitude: 50.8503,
-        zoom: 12
-      }}
-      controller={true}
-      layers={layers}
-    >
-      <Map mapStyle="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json" />
-    </DeckGL>
-  );
-}
-`.trim();
-}
-
-const codeSnippets = {
-  js: getDeckGlSnippet,
-  react: getReactSnippet,
+  return data;
+}`;
+  },
+  unity: (item: LibraryItem) => {
+    const dataset = item as unknown as RealtimeDataset;
+    return `// Unity C# Example
+// Endpoint: https://api.mobilitytwin.brussels${dataset.endpoint}
+// Ensure you add the Authorization header with your token`;
+  }
 };
+
+// Custom fetch function to return our static list as an AxiosResponse structure
+// LibraryBase expects a promise resolving to ApiResponse<T[]>
+async function fetchRealtimeDatasets(): Promise<ApiResponse<RealtimeDataset[]>> {
+  return {
+    data: realtimeDatasets,
+    status: 200,
+    statusText: 'OK'
+  };
+}
+
+// We don't need upload/delete for these system-defined endpoints
 </script>
 
 <template>
   <LibraryBase
-    title="Realtime Data Library"
-    itemType="dataset"
-    :viewerComponent="RealtimeViewer"
-    :codeSnippets="codeSnippets"
-    :staticItems="realtimeDatasets"
+    title="Realtime Data"
+    item-type="dataset"
+    :viewer-component="RealtimeViewer"
+    :code-snippets="codeSnippets"
+    :custom-fetch="fetchRealtimeDatasets"
   >
     <template #list-item="{ items, selectedItem, selectItem }">
       <li
-        v-for="dataset in items"
-        :key="dataset.id"
-        class="flex justify-between items-center px-4 py-2 border-b cursor-pointer hover:bg-gray-100"
-        :class="{ 'bg-blue-50': selectedItem && selectedItem.id === dataset.id }"
-        @click="selectItem(dataset)"
+        v-for="item in items"
+        :key="item.id"
+        :class="[
+          'p-3 mb-2 rounded cursor-pointer transition-colors border border-gray-200 hover:bg-gray-100',
+          selectedItem?.id === item.id ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white',
+        ]"
+        @click="selectItem(item)"
       >
-        <div>
-          <div class="font-bold">{{ dataset.name }}</div>
-          <div class="text-sm text-gray-600">{{ dataset.description }}</div>
+        <div class="font-bold text-gray-800">{{ item.name }}</div>
+        <div class="text-sm text-gray-600 mt-1 line-clamp-2">{{ item.description }}</div>
+        <div class="text-xs text-gray-400 mt-2 font-mono bg-gray-100 inline-block px-1 rounded">
+          {{ (item as any).id }}
         </div>
       </li>
     </template>
   </LibraryBase>
 </template>
+

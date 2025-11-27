@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import { getToken } from '@josempgon/vue-keycloak';
-import type { Asset, MapLayer, Tileset, VehicleGeoJSONCollection, VehicleFeature } from '@/types';
+import type { Asset, MapLayer, Tileset } from '@/types';
 
 /**
  * Axios instance configured with base URL and auth interceptor
@@ -11,6 +11,7 @@ export const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
 
 // Add auth token interceptor
 apiClient.interceptors.request.use(
@@ -154,10 +155,56 @@ export function deleteTileset(tileset: { url: string }): Promise<AxiosResponse<v
 
 /**
  * Fetch vehicle positions (realtime data)
- */
+ USELESS NO ?
 export function fetchVehiclePositions(
   endpoint: string,
   customHeaders?: Record<string, string>
 ): Promise<AxiosResponse<VehicleGeoJSONCollection | VehicleFeature[]>> {
   return apiClient.get(endpoint, { headers: customHeaders });
 }
+  */
+ 
+/**
+ * Mobility Twin API Endpoints Configuration
+ * * The resason to use mobility twin here is because the harvester that compute the vehicule position 
+  * from the different stib endpoint is not there in the ts backend 
+  * We could implement in the ts backend , to be discussed
+ */
+export const MobilityEndpoints = {
+  stib: '/stib/vehicle-position',
+  sncb: '/sncb/vehicle-position',
+  bolt: '/bolt/vehicle-position',
+  dott: '/dott/vehicle-position',
+  telraam: '/traffic/telraam',
+  tunnels: '/traffic/tunnels',
+  tunnelDevices: '/traffic/tunnel-devices',
+  airQuality: '/environment/air-quality',
+} as const;
+
+export type MobilitySource = keyof typeof MobilityEndpoints;
+
+/**
+ * Fetch vehicle positions from Mobility Twin API
+ * The resason to use mobility twin here is because the harvester that compute the vehicule position 
+ * from the different stib endpoint is not there in the ts backend 
+ * We could implement in the ts backend , to be discussed
+ */
+export const mobilityTwinApiClient: AxiosInstance = axios.create({
+  baseURL: 'https://api.mobilitytwin.brussels',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${import.meta.env.VITE_MOBILITY_TWIN_API_TOKEN}`,
+  },
+});
+
+/**
+ * Generic function to fetch data from Mobility Twin API
+ */
+export function fetchMobilityData<T = unknown>(
+  source: MobilitySource,
+  params?: Record<string, string | number | boolean>
+): Promise<AxiosResponse<T>> {
+  const endpoint = MobilityEndpoints[source];
+  return mobilityTwinApiClient.get<T>(endpoint, { params });
+}
+

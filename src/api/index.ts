@@ -14,8 +14,11 @@ export { useAssetsQuery, useUploadAssetMutation, useDeleteAssetMutation } from '
 // Map Layers
 export {
   useMapLayersQuery,
+  useMapLayersGroupedQuery,
   useAddMapLayerMutation,
   useDeleteMapLayerMutation,
+  useDeleteMapLayerByIdMutation,
+  useDeleteAllLayersFromServerMutation,
   type AddMapLayerPayload,
   type DeleteMapLayerPayload,
 } from './queries/mapLayers';

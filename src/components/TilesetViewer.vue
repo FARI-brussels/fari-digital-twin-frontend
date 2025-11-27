@@ -164,8 +164,8 @@ onBeforeUnmount(() => {
     <div class="absolute top-2.5 right-2.5 z-[100] bg-black/80 p-2.5 rounded">
       <label class="flex items-center text-white text-sm cursor-pointer select-none">
         <input
-          type="checkbox"
           v-model="showWmsLayer"
+          type="checkbox"
           class="mr-2 cursor-pointer"
           @change="toggleWmsLayer"
         />

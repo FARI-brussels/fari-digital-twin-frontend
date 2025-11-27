@@ -277,7 +277,6 @@ onBeforeUnmount(() => {
       </div>
 
       <button
-        @click="fetchAndUpdateVehicles"
         :disabled="loading"
         :class="[
           'w-full px-4 py-2 rounded font-medium transition-colors',
@@ -285,6 +284,7 @@ onBeforeUnmount(() => {
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
             : 'bg-blue-600 text-white hover:bg-blue-700',
         ]"
+        @click="fetchAndUpdateVehicles"
       >
         {{ loading ? 'Updating...' : 'Update Data' }}
       </button>

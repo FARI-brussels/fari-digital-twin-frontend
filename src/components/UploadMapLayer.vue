@@ -1,26 +1,56 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { postItem } from '@/lib/api';
+import type { MapLayer } from '@/types';
 
-const emit = defineEmits(['uploaded', 'cancel']);
+// ============================================================================
+// Types
+// ============================================================================
+
+interface AddLayerPayload {
+  layer: {
+    url: string;
+    layer: string;
+    description: string;
+  };
+}
+
+// ============================================================================
+// Emits
+// ============================================================================
+
+const emit = defineEmits<{
+  uploaded: [];
+  cancel: [];
+}>();
+
+// ============================================================================
+// State
+// ============================================================================
+
 const url = ref('');
 const layer = ref('');
 const description = ref('');
-const error = ref(null);
+const error = ref<string | null>(null);
 const successMessage = ref('');
 const submitting = ref(false);
 
-const addLayer = async () => {
+// ============================================================================
+// Methods
+// ============================================================================
+
+async function addLayer(): Promise<void> {
   error.value = null;
   successMessage.value = '';
   submitting.value = true;
+
   try {
-    await postItem('/maps-manager/add_layer', {
+    await postItem<MapLayer, AddLayerPayload>('/maps-manager/add_layer', {
       layer: {
         url: url.value,
         layer: layer.value,
         description: description.value,
-      }
+      },
     });
     successMessage.value = 'Map layer added successfully!';
     url.value = '';
@@ -35,7 +65,11 @@ const addLayer = async () => {
   } finally {
     submitting.value = false;
   }
-};
+}
+
+function handleCancel(): void {
+  emit('cancel');
+}
 </script>
 
 <template>
@@ -44,25 +78,51 @@ const addLayer = async () => {
     <form @submit.prevent="addLayer">
       <div class="mb-4">
         <label for="url" class="block font-bold mb-2">Provider URL:</label>
-        <input type="url" id="url" v-model="url" placeholder="e.g., http://example.com/wms" required
-          class="w-full px-2 py-1 border rounded" />
+        <input
+          type="url"
+          id="url"
+          v-model="url"
+          placeholder="e.g., http://example.com/wms"
+          required
+          class="w-full px-2 py-1 border rounded"
+        />
       </div>
       <div class="mb-4">
         <label for="layer" class="block font-bold mb-2">Layer Name/ID:</label>
-        <input type="text" id="layer" v-model="layer" placeholder="e.g., MyLayerName" required
-          class="w-full px-2 py-1 border rounded" />
+        <input
+          type="text"
+          id="layer"
+          v-model="layer"
+          placeholder="e.g., MyLayerName"
+          required
+          class="w-full px-2 py-1 border rounded"
+        />
       </div>
       <div class="mb-4">
         <label for="description" class="block font-bold mb-2">Description:</label>
-        <textarea id="description" v-model="description" rows="3" required
-          class="w-full px-2 py-1 border rounded"></textarea>
+        <textarea
+          id="description"
+          v-model="description"
+          rows="3"
+          required
+          class="w-full px-2 py-1 border rounded"
+        ></textarea>
       </div>
       <div class="flex justify-end gap-2 mt-4">
-        <button type="submit" :disabled="submitting"
-          class="px-4 py-2 rounded bg-green-600 text-white font-bold disabled:bg-green-300">{{ submitting ? 'Adding...'
-            : 'Add Layer' }}</button>
-        <button type="button" @click="$emit('cancel')"
-          class="px-4 py-2 rounded bg-red-600 text-white font-bold">Cancel</button>
+        <button
+          type="submit"
+          :disabled="submitting"
+          class="px-4 py-2 rounded bg-green-600 text-white font-bold disabled:bg-green-300"
+        >
+          {{ submitting ? 'Adding...' : 'Add Layer' }}
+        </button>
+        <button
+          type="button"
+          @click="handleCancel"
+          class="px-4 py-2 rounded bg-red-600 text-white font-bold"
+        >
+          Cancel
+        </button>
       </div>
       <div v-if="error" class="text-red-600 mt-4 text-center">{{ error }}</div>
       <div v-if="successMessage" class="text-green-600 mt-4 text-center">{{ successMessage }}</div>

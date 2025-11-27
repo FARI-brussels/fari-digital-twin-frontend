@@ -4,7 +4,8 @@ import { Deck, type MapViewState } from '@deck.gl/core';
 import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import { Map } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { apiClient } from '@/lib/api';
+import { apiClient } from '@/api';
+import { HTTPError } from 'ky';
 import type { RealtimeDataset, VehicleFeature, VehicleGeoJSONCollection } from '@/types';
 
 // ============================================================================
@@ -17,13 +18,6 @@ interface VehicleData {
   latitude: number;
   routeId?: string;
   color: [number, number, number];
-}
-
-interface ApiErrorResponse {
-  response?: {
-    status: number;
-  };
-  message?: string;
 }
 
 // ============================================================================
@@ -109,30 +103,26 @@ async function fetchAndUpdateVehicles(): Promise<void> {
   error.value = null;
 
   try {
-    const headers: Record<string, string> = {};
-    const twinToken = import.meta.env.VITE_TWIN_API_TOKEN as string | undefined;
+    // Remove leading slash for ky prefixUrl compatibility
+    const endpoint = props.dataset.endpoint.startsWith('/')
+      ? props.dataset.endpoint.slice(1)
+      : props.dataset.endpoint;
 
-    if (twinToken) {
-      headers.Authorization = `Bearer ${twinToken}`;
-    }
+    // Use VITE_TWIN_API_TOKEN for realtime endpoints if available
+    const twinToken = import.meta.env.VITE_TWIN_API_TOKEN;
+    const options = twinToken
+      ? { headers: { Authorization: `Bearer ${twinToken}` } }
+      : {};
 
-    const response = await apiClient.get<VehicleGeoJSONCollection | VehicleFeature[]>(
-      props.dataset.endpoint,
-      { headers }
-    );
-
-    // Check if response is actually JSON
-    if (typeof response.data === 'string') {
-      throw new Error(
-        'API returned invalid response format (expected JSON, got HTML/text). The endpoint may not exist or authentication is required.'
-      );
-    }
+    const data = await apiClient
+      .get(endpoint, options)
+      .json<VehicleGeoJSONCollection | VehicleFeature[]>();
 
     let features: VehicleFeature[] = [];
-    if (Array.isArray(response.data)) {
-      features = response.data;
-    } else if (response.data && typeof response.data === 'object' && 'features' in response.data) {
-      features = response.data.features ?? [];
+    if (Array.isArray(data)) {
+      features = data;
+    } else if (data && typeof data === 'object' && 'features' in data) {
+      features = data.features ?? [];
     } else {
       throw new Error('Unexpected API response format');
     }
@@ -166,20 +156,19 @@ async function fetchAndUpdateVehicles(): Promise<void> {
     updateLayers(vehicles);
   } catch (err: unknown) {
     console.error('Error fetching vehicle data:', err);
-    const apiError = err as ApiErrorResponse;
 
-    if (apiError.response) {
-      const status = apiError.response.status;
+    if (err instanceof HTTPError) {
+      const status = err.response.status;
       if (status === 404) {
         error.value = `API endpoint not found: ${props.dataset.endpoint}. Check your backend configuration.`;
       } else if (status === 401 || status === 403) {
         error.value =
           'Authentication required. Check your Keycloak login or VITE_TWIN_API_TOKEN.';
       } else {
-        error.value = `Server error (${status}): ${apiError.message ?? 'Unknown error'}`;
+        error.value = `Server error (${status}): ${err.message}`;
       }
-    } else if (apiError.message) {
-      error.value = apiError.message;
+    } else if (err instanceof Error) {
+      error.value = err.message;
     } else {
       error.value = 'Failed to fetch vehicle positions. Check console for details.';
     }

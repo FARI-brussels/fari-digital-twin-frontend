@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import LibraryBase from '@/components/LibraryBase.vue';
 import TilesetViewer from '@/components/TilesetViewer.vue';
 import UploadTileset from '@/components/UploadTileset.vue';
+import { useTilesetsQuery, useDeleteTilesetMutation } from '@/api';
 import type { Tileset, LibraryItem } from '@/types';
 
 // ============================================================================
@@ -14,14 +16,35 @@ interface TilesetItem extends LibraryItem {
 }
 
 // ============================================================================
-// Data Transformation
+// Query & Mutations
 // ============================================================================
 
-function transformTilesetData(data: unknown[]): TilesetItem[] {
-  return (data as Tileset[]).map((tileset) => ({
+const { data: rawTilesets, isLoading, error, refetch } = useTilesetsQuery();
+const deleteTilesetMutation = useDeleteTilesetMutation();
+
+// ============================================================================
+// Computed
+// ============================================================================
+
+const tilesets = computed<TilesetItem[]>(() => {
+  if (!rawTilesets.value) return [];
+  return rawTilesets.value.map((tileset: Tileset) => ({
     ...tileset,
     description: tileset.description ?? 'No description',
   }));
+});
+
+// ============================================================================
+// Handlers
+// ============================================================================
+
+async function handleDelete(item: LibraryItem): Promise<void> {
+  if (!item.url) throw new Error('Tileset has no URL');
+  await deleteTilesetMutation.mutateAsync(item.url);
+}
+
+function handleUploaded(): void {
+  void refetch();
 }
 
 // ============================================================================
@@ -68,12 +91,14 @@ const codeSnippets = {
   <LibraryBase
     title="Tileset Library"
     itemType="tileset"
-    fetchUrl="/tileset-manager"
-    deleteUrlBase="/tileset-manager/delete"
     :viewerComponent="TilesetViewer"
     :uploadComponent="UploadTileset"
     :codeSnippets="codeSnippets"
-    :transformData="transformTilesetData"
+    :items="tilesets"
+    :isLoading="isLoading"
+    :error="error"
+    :onDelete="handleDelete"
+    @uploaded="handleUploaded"
   >
     <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
       <li

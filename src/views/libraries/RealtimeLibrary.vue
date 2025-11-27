@@ -142,6 +142,9 @@ const codeSnippets = {
     itemType="dataset"
     :viewerComponent="RealtimeViewer"
     :codeSnippets="codeSnippets"
+    :items="[]"
+    :isLoading="false"
+    :error="null"
     :staticItems="realtimeDatasets"
   >
     <template #list-item="{ items, selectedItem, selectItem }">

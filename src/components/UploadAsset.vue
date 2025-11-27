@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { uploadItem } from '@/lib/api';
-import type { Asset } from '@/types';
+import { ref, computed } from 'vue';
+import { useUploadAssetMutation } from '@/api';
 
 // ============================================================================
 // Emits
@@ -18,11 +17,23 @@ const emit = defineEmits<{
 
 const file = ref<File | null>(null);
 const description = ref('');
-const error = ref<string | null>(null);
 const successMessage = ref('');
-const uploading = ref(false);
-
 const fileInputRef = ref<HTMLInputElement | null>(null);
+
+// ============================================================================
+// Mutation
+// ============================================================================
+
+const uploadMutation = useUploadAssetMutation();
+
+const error = computed(() => {
+  if (uploadMutation.error.value) {
+    return 'Failed to upload asset. Please try again.';
+  }
+  return null;
+});
+
+const uploading = computed(() => uploadMutation.isPending.value);
 
 // ============================================================================
 // Methods
@@ -32,12 +43,11 @@ function handleFileChange(event: Event): void {
   const target = event.target as HTMLInputElement;
   file.value = target.files?.[0] ?? null;
   successMessage.value = '';
-  error.value = null;
+  uploadMutation.reset();
 }
 
 async function uploadAsset(): Promise<void> {
   if (!file.value || !description.value) {
-    error.value = 'File and description are required.';
     return;
   }
 
@@ -45,12 +55,10 @@ async function uploadAsset(): Promise<void> {
   formData.append('file', file.value);
   formData.append('description', description.value);
 
-  error.value = null;
   successMessage.value = '';
-  uploading.value = true;
 
   try {
-    await uploadItem<Asset>('/assets-manager/upload', formData);
+    await uploadMutation.mutateAsync(formData);
     successMessage.value = 'Asset uploaded successfully!';
     description.value = '';
 
@@ -63,11 +71,8 @@ async function uploadAsset(): Promise<void> {
     setTimeout(() => {
       emit('uploaded');
     }, 1500);
-  } catch (err) {
-    console.error('Error uploading asset:', err);
-    error.value = 'Failed to upload asset. Please try again.';
-  } finally {
-    uploading.value = false;
+  } catch {
+    // Error is handled by the mutation
   }
 }
 

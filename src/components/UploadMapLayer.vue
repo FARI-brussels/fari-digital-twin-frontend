@@ -1,19 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { postItem } from '@/lib/api';
-import type { MapLayer } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface AddLayerPayload {
-  layer: {
-    url: string;
-    layer: string;
-    description: string;
-  };
-}
+import { ref, computed } from 'vue';
+import { useAddMapLayerMutation } from '@/api';
 
 // ============================================================================
 // Emits
@@ -31,26 +18,36 @@ const emit = defineEmits<{
 const url = ref('');
 const layer = ref('');
 const description = ref('');
-const error = ref<string | null>(null);
 const successMessage = ref('');
-const submitting = ref(false);
+
+// ============================================================================
+// Mutation
+// ============================================================================
+
+const addLayerMutation = useAddMapLayerMutation();
+
+const error = computed(() => {
+  if (addLayerMutation.error.value) {
+    return 'Failed to add map layer. Please check the details and try again.';
+  }
+  return null;
+});
+
+const submitting = computed(() => addLayerMutation.isPending.value);
 
 // ============================================================================
 // Methods
 // ============================================================================
 
 async function addLayer(): Promise<void> {
-  error.value = null;
   successMessage.value = '';
-  submitting.value = true;
+  addLayerMutation.reset();
 
   try {
-    await postItem<MapLayer, AddLayerPayload>('/maps-manager/add_layer', {
-      layer: {
-        url: url.value,
-        layer: layer.value,
-        description: description.value,
-      },
+    await addLayerMutation.mutateAsync({
+      url: url.value,
+      layer: layer.value,
+      description: description.value,
     });
     successMessage.value = 'Map layer added successfully!';
     url.value = '';
@@ -59,11 +56,8 @@ async function addLayer(): Promise<void> {
     setTimeout(() => {
       emit('uploaded');
     }, 1500);
-  } catch (err) {
-    console.error('Error adding map layer:', err);
-    error.value = 'Failed to add map layer. Please check the details and try again.';
-  } finally {
-    submitting.value = false;
+  } catch {
+    // Error is handled by the mutation
   }
 }
 

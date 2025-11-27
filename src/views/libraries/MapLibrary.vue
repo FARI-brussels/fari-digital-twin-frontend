@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { deleteMapLayer as apiDeleteMapLayer } from '@/lib/api';
+import { computed } from 'vue';
 import LibraryBase from '@/components/LibraryBase.vue';
 import MapViewer from '@/components/MapViewer.vue';
 import UploadMapLayer from '@/components/UploadMapLayer.vue';
+import { useMapLayersQuery, useDeleteMapLayerMutation } from '@/api';
 import type { MapLayer, LibraryItem, GroupedLayers } from '@/types';
 
 // ============================================================================
@@ -16,13 +17,27 @@ interface MapLayerItem extends LibraryItem {
 }
 
 // ============================================================================
+// Query & Mutations
+// ============================================================================
+
+const { data: rawMapLayers, isLoading, error, refetch } = useMapLayersQuery();
+const deleteMapLayerMutation = useDeleteMapLayerMutation();
+
+// ============================================================================
+// Computed
+// ============================================================================
+
+const mapLayers = computed<MapLayerItem[]>(() => {
+  if (!rawMapLayers.value) return [];
+  return rawMapLayers.value as MapLayerItem[];
+});
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
 function groupedLayers(layers: LibraryItem[]): GroupedLayers {
-  if (!Array.isArray(layers)) {
-    return {};
-  }
+  if (!Array.isArray(layers)) return {};
   return (layers as MapLayerItem[]).reduce<GroupedLayers>((acc, layer) => {
     const provider = layer.url;
     if (!acc[provider]) {
@@ -34,20 +49,19 @@ function groupedLayers(layers: LibraryItem[]): GroupedLayers {
 }
 
 // ============================================================================
-// Delete Handler (Fixed bug: was missing deleteUrlBase parameter)
+// Handlers
 // ============================================================================
 
-async function deleteMapLayer(layer: LibraryItem): Promise<void> {
-  const mapLayer = layer as MapLayerItem;
-  try {
-    await apiDeleteMapLayer('/maps-manager/delete', {
-      url: mapLayer.url,
-      layer: mapLayer.layer,
-    });
-  } catch (err) {
-    console.error('Error deleting map layer:', err);
-    throw err;
-  }
+async function handleDelete(item: LibraryItem): Promise<void> {
+  const mapLayer = item as MapLayerItem;
+  await deleteMapLayerMutation.mutateAsync({
+    url: mapLayer.url,
+    layer: mapLayer.layer,
+  });
+}
+
+function handleUploaded(): void {
+  void refetch();
 }
 
 // ============================================================================
@@ -98,11 +112,14 @@ const codeSnippets = {
   <LibraryBase
     title="Map Layer Library"
     itemType="map"
-    fetchUrl="/maps-manager/all"
     :viewerComponent="MapViewer"
     :uploadComponent="UploadMapLayer"
     :codeSnippets="codeSnippets"
-    :deleteItem="deleteMapLayer"
+    :items="mapLayers"
+    :isLoading="isLoading"
+    :error="error"
+    :onDelete="handleDelete"
+    @uploaded="handleUploaded"
   >
     <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
       <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="mb-5">

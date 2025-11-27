@@ -57,8 +57,12 @@ function initializeViewer(): void {
       })
     );
 
-    // Set terrain using the scene method
-    viewer.scene.setTerrain(new Cesium.Terrain(Cesium.CesiumTerrainProvider.fromIonAssetId(3340034)));
+    // Set terrain only if Ion token is available
+    if (cesiumToken) {
+      viewer.scene.setTerrain(
+        new Cesium.Terrain(Cesium.CesiumTerrainProvider.fromIonAssetId(3340034))
+      );
+    }
 
     // Add WMS layer by default
     addWmsLayer();

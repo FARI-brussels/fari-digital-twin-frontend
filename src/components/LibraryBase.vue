@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, type Component } from 'vue';
-import { fetchItems as apiFetchItems, deleteItem as apiDeleteItem } from '@/lib/api';
-import type { AxiosResponse } from 'axios';
+import { ref, computed, watch, type Component, type Ref } from 'vue';
 import type { ItemType, CodeLanguage, LibraryItem } from '@/types';
 
 // ============================================================================
@@ -11,33 +9,61 @@ import type { ItemType, CodeLanguage, LibraryItem } from '@/types';
 interface Props {
   title: string;
   itemType: ItemType;
-  fetchUrl?: string;
-  deleteUrlBase?: string;
   viewerComponent: Component;
   uploadComponent?: Component;
   codeSnippets: Partial<Record<CodeLanguage, (item: LibraryItem) => string>>;
-  transformData?: (data: unknown[]) => LibraryItem[];
-  deleteItem?: (item: LibraryItem) => Promise<void>;
+  // TanStack Query integration
+  items: LibraryItem[];
+  isLoading: boolean;
+  error: Error | null;
+  // Optional callbacks for mutations
+  onDelete?: (item: LibraryItem) => Promise<void>;
+  // For static items (like realtime datasets)
   staticItems?: LibraryItem[];
-  customFetch?: () => Promise<AxiosResponse<LibraryItem[]>>;
 }
 
 const props = defineProps<Props>();
 
 // ============================================================================
+// Emits
+// ============================================================================
+
+const emit = defineEmits<{
+  uploaded: [];
+}>();
+
+// ============================================================================
 // State
 // ============================================================================
 
-const items = ref<LibraryItem[]>([]);
-const selectedItem = ref<LibraryItem | null>(null);
-const error = ref<string | null>(null);
-const loading = ref(true);
+const selectedItem = ref<LibraryItem | null>(null) as Ref<LibraryItem | null>;
 const showUploadPage = ref(false);
 const selectedLanguage = ref<CodeLanguage>('js');
+const deleteError = ref<string | null>(null);
 
 // ============================================================================
 // Computed
 // ============================================================================
+
+const displayItems = computed(() => {
+  if (props.staticItems && props.staticItems.length > 0) {
+    return props.staticItems;
+  }
+  return props.items;
+});
+
+const displayLoading = computed(() => {
+  if (props.staticItems) return false;
+  return props.isLoading;
+});
+
+const displayError = computed(() => {
+  if (deleteError.value) return deleteError.value;
+  if (props.error) {
+    return `Failed to fetch ${props.itemType}s. Make sure the backend server is running.`;
+  }
+  return null;
+});
 
 const viewerProps = computed<Record<string, unknown>>(() => {
   if (!selectedItem.value) return {};
@@ -78,109 +104,55 @@ const languageLabel = computed(() => {
 });
 
 // ============================================================================
+// Watchers
+// ============================================================================
+
+// Auto-select first item when items load
+watch(
+  displayItems,
+  newItems => {
+    if (newItems.length > 0 && !selectedItem.value) {
+      selectedItem.value = newItems[0] ?? null;
+    }
+  },
+  { immediate: true }
+);
+
+// ============================================================================
 // Methods
 // ============================================================================
 
-async function fetchItemsData(): Promise<void> {
-  loading.value = true;
-  error.value = null;
-
-  try {
-    // Use static items if provided
-    if (props.staticItems) {
-      items.value = props.staticItems;
-      if (items.value.length > 0) {
-        selectedItem.value = items.value[0] ?? null;
-      }
-      loading.value = false;
-      return;
-    }
-
-    // Use custom fetch function if provided
-    if (props.customFetch) {
-      const response = await props.customFetch();
-      const data = response.data;
-      if (Array.isArray(data)) {
-        items.value = props.transformData ? props.transformData(data) : data;
-        if (items.value.length > 0) {
-          selectedItem.value = items.value[0] ?? null;
-        }
-      } else {
-        items.value = [];
-      }
-      loading.value = false;
-      return;
-    }
-
-    // Default API fetch
-    if (!props.fetchUrl) {
-      throw new Error('No fetchUrl provided and no static items or custom fetch');
-    }
-
-    const response = await apiFetchItems<LibraryItem>(props.fetchUrl);
-    const data = response.data;
-    if (Array.isArray(data)) {
-      items.value = props.transformData ? props.transformData(data) : data;
-      if (items.value.length > 0) {
-        selectedItem.value = items.value[0] ?? null;
-      }
-    } else {
-      items.value = [];
-    }
-  } catch (err) {
-    console.error(`Error fetching ${props.itemType}s:`, err);
-    error.value = `Failed to fetch ${props.itemType}s. Make sure the backend server is running.`;
-    items.value = [];
-  } finally {
-    loading.value = false;
-  }
-}
-
 function handleItemUploaded(): void {
   showUploadPage.value = false;
-  void fetchItemsData();
+  emit('uploaded');
 }
 
 async function handleDeleteItem(item: LibraryItem): Promise<void> {
-  if (props.deleteItem) {
-    await props.deleteItem(item);
-    void fetchItemsData();
+  if (!props.onDelete) {
+    console.error('No delete handler provided');
     return;
   }
 
-  if (!props.deleteUrlBase) {
-    console.error('No deleteUrlBase provided');
-    return;
-  }
-
-  if (!item.url) {
-    console.error('Item has no URL for deletion');
-    return;
-  }
+  deleteError.value = null;
 
   try {
-    await apiDeleteItem(props.deleteUrlBase, { url: item.url });
-    items.value = items.value.filter(i => i.url !== item.url);
-    if (selectedItem.value?.url === item.url) {
-      selectedItem.value = items.value.length > 0 ? (items.value[0] ?? null) : null;
+    await props.onDelete(item);
+    // If deleted item was selected, select first available
+    if (selectedItem.value?.url === item.url || selectedItem.value?.id === item.id) {
+      const remaining = displayItems.value.filter(
+        i => i.url !== item.url && i.id !== item.id
+      );
+      selectedItem.value = remaining.length > 0 ? (remaining[0] ?? null) : null;
     }
   } catch (err) {
     console.error(`Error deleting ${props.itemType}:`, err);
-    error.value = `Failed to delete ${props.itemType}.`;
+    deleteError.value = `Failed to delete ${props.itemType}.`;
   }
 }
 
 function selectItem(item: LibraryItem): void {
   selectedItem.value = item;
 }
-
-// ============================================================================
-// Lifecycle
-// ============================================================================
-
-onMounted(() => {
-  void fetchItemsData();
-});
 </script>
 
 <template>
@@ -204,15 +176,20 @@ onMounted(() => {
             Upload {{ itemType }}
           </button>
         </div>
-        <div v-if="error" class="text-red-600 mb-2">{{ error }}</div>
-        <div v-if="loading" class="text-center py-5 text-gray-500">Loading {{ itemType }}s...</div>
-        <div v-if="!loading && items.length === 0" class="text-center py-5 text-gray-400">
+        <div v-if="displayError" class="text-red-600 mb-2">{{ displayError }}</div>
+        <div v-if="displayLoading" class="text-center py-5 text-gray-500">
+          Loading {{ itemType }}s...
+        </div>
+        <div
+          v-if="!displayLoading && displayItems.length === 0"
+          class="text-center py-5 text-gray-400"
+        >
           No {{ itemType }}s found.
         </div>
-        <ul v-if="items.length > 0">
+        <ul v-if="displayItems.length > 0">
           <slot
             name="list-item"
-            :items="items"
+            :items="displayItems"
             :selected-item="selectedItem"
             :select-item="selectItem"
             :delete-item="handleDeleteItem"
@@ -246,7 +223,9 @@ onMounted(() => {
                 </button>
               </div>
             </div>
-            <pre class="bg-gray-900 text-gray-100 p-4 rounded overflow-auto flex-1 min-h-0"><code>{{ currentCodeSnippet }}</code></pre>
+            <pre
+              class="bg-gray-900 text-gray-100 p-4 rounded overflow-auto flex-1 min-h-0"
+            ><code>{{ currentCodeSnippet }}</code></pre>
           </div>
         </div>
 

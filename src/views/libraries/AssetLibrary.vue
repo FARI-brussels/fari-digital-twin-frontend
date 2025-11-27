@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import LibraryBase from '@/components/LibraryBase.vue';
 import AssetViewer from '@/components/AssetViewer.vue';
 import UploadAsset from '@/components/UploadAsset.vue';
+import { useAssetsQuery, useDeleteAssetMutation } from '@/api';
 import type { Asset, LibraryItem } from '@/types';
 
 // ============================================================================
@@ -15,14 +17,35 @@ interface AssetItem extends LibraryItem {
 }
 
 // ============================================================================
-// Data Transformation
+// Query & Mutations
 // ============================================================================
 
-function transformAssetData(data: unknown[]): AssetItem[] {
-  return (data as Asset[]).map((asset) => ({
+const { data: rawAssets, isLoading, error, refetch } = useAssetsQuery();
+const deleteAssetMutation = useDeleteAssetMutation();
+
+// ============================================================================
+// Computed
+// ============================================================================
+
+const assets = computed<AssetItem[]>(() => {
+  if (!rawAssets.value) return [];
+  return rawAssets.value.map((asset: Asset) => ({
     ...asset,
     name: asset.url.split('/').pop() ?? 'Unknown',
   }));
+});
+
+// ============================================================================
+// Handlers
+// ============================================================================
+
+async function handleDelete(item: LibraryItem): Promise<void> {
+  if (!item.url) throw new Error('Asset has no URL');
+  await deleteAssetMutation.mutateAsync(item.url);
+}
+
+function handleUploaded(): void {
+  void refetch();
 }
 
 // ============================================================================
@@ -71,12 +94,14 @@ const codeSnippets = {
   <LibraryBase
     title="Asset Library"
     itemType="asset"
-    fetchUrl="/assets-manager"
-    deleteUrlBase="/assets-manager/delete"
     :viewerComponent="AssetViewer"
     :uploadComponent="UploadAsset"
     :codeSnippets="codeSnippets"
-    :transformData="transformAssetData"
+    :items="assets"
+    :isLoading="isLoading"
+    :error="error"
+    :onDelete="handleDelete"
+    @uploaded="handleUploaded"
   >
     <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
       <li

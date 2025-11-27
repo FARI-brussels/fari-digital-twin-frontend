@@ -1,26 +1,38 @@
-<script setup>
+<script setup lang="ts">
 import LibraryBase from '@/components/LibraryBase.vue';
 import RealtimeViewer from '@/components/RealtimeViewer.vue';
+import type { RealtimeDataset, LibraryItem } from '@/types';
 
-// Liste des datasets disponibles
-const realtimeDatasets = [
+// ============================================================================
+// Static Data
+// ============================================================================
+
+const realtimeDatasets: RealtimeDataset[] = [
   {
     id: 'stib-vehicles',
     name: 'STIB Vehicle Positions',
     description: 'Live positions of STIB vehicles (Metro, Tram, Bus)',
     endpoint: '/stib/vehicle-position',
-    type: 'vehicle-positions'
+    type: 'vehicle-positions',
   },
   {
     id: 'sncb-trains',
     name: 'SNCB Train Positions',
     description: 'Live positions of SNCB trains in Belgium',
     endpoint: '/sncb/vehicle-position',
-    type: 'vehicle-positions'
-  }
+    type: 'vehicle-positions',
+  },
 ];
 
-const getDeckGlSnippet = (dataset) => `
+// ============================================================================
+// Code Snippets
+// ============================================================================
+
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+function getDeckGlSnippet(dataset: LibraryItem): string {
+  const realtimeDataset = dataset as RealtimeDataset;
+  return `
 import { Deck } from '@deck.gl/core';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { Map } from 'maplibre-gl';
@@ -34,7 +46,7 @@ const map = new Map({
 });
 
 // Fetch vehicle data
-const response = await fetch('${import.meta.env.VITE_BACKEND_URL}${dataset.endpoint}');
+const response = await fetch('${backendUrl}${realtimeDataset.endpoint}');
 const data = await response.json();
 const vehicles = Array.isArray(data) ? data : data.features || [];
 
@@ -61,18 +73,24 @@ const deck = new Deck({
   ]
 });
 `.trim();
+}
 
-const getReactSnippet = (dataset) => `
-import { useEffect, useState } from 'react';
-import { Map } from 'react-map-gl';
-import DeckGL from '@deck.gl/react';
-import { ScatterplotLayer } from '@deck.gl/layers';
+function getReactSnippet(dataset: LibraryItem): string {
+  const realtimeDataset = dataset as RealtimeDataset;
+  // Use array join to prevent bundler from detecting imports in string
+  const imports = [
+    "import { useEffect, useState } from 'react';",
+    "import { Map } from 'react-map-gl';",
+    "import DeckGL from '@deck.gl/react';",
+    "import { ScatterplotLayer } from '@deck.gl/layers';",
+  ].join('\n');
+  return `${imports}
 
 function VehicleMap() {
   const [vehicles, setVehicles] = useState([]);
 
   const fetchVehicles = async () => {
-    const response = await fetch('${import.meta.env.VITE_BACKEND_URL}${dataset.endpoint}');
+    const response = await fetch('${backendUrl}${realtimeDataset.endpoint}');
     const data = await response.json();
     const vehicleData = Array.isArray(data) ? data : data.features || [];
     setVehicles(vehicleData.map(v => ({
@@ -110,6 +128,7 @@ function VehicleMap() {
   );
 }
 `.trim();
+}
 
 const codeSnippets = {
   js: getDeckGlSnippet,

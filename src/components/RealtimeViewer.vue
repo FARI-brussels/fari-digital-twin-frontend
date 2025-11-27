@@ -1,301 +1,254 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import { Deck, type MapViewState } from '@deck.gl/core';
-import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { Map } from 'maplibre-gl';
+import { ref, onMounted, watch, onUnmounted, computed } from 'vue';
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import { GeoJsonLayer, IconLayer } from '@deck.gl/layers';
+import maplibregl, { type IControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { apiClient } from '@/api';
-import { HTTPError } from 'ky';
-import type { RealtimeDataset, VehicleFeature, VehicleGeoJSONCollection } from '@/types';
+import type { RealtimeDataset, VehicleGeoJSONCollection } from '@/types';
+import { fetchMobilityData, type MobilitySource } from '@/lib/api';
+import { getLayerStyle, type LayerStyleConfig } from '@/lib/layerStyles';
 
-// ============================================================================
-// Types
-// ============================================================================
+const props = defineProps<{
+  dataset?: RealtimeDataset;
+}>();
 
-interface VehicleData {
-  id: string;
-  longitude: number;
-  latitude: number;
-  routeId?: string;
-  color: [number, number, number];
-}
+// eslint-disable-next-line no-undef
+const container = ref<HTMLDivElement | null>(null);
+let map: maplibregl.Map | null = null;
+let deckOverlay: MapboxOverlay | null = null;
 
-// ============================================================================
-// Props Definition
-// ============================================================================
-
-interface Props {
-  dataset: RealtimeDataset;
-}
-
-const props = defineProps<Props>();
-
-// ============================================================================
-// State
-// ============================================================================
-
-const mapContainer = ref<HTMLElement | null>(null);
-const deckCanvas = ref<HTMLCanvasElement | null>(null);
+// Data state
+const geojsonData = ref<VehicleGeoJSONCollection | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const vehicleCount = ref(0);
-const lastUpdate = ref<string | null>(null);
+const pollInterval = ref<number | null>(null);
+const selectedInfo = ref<{ x: number; y: number; object: { properties: Record<string, unknown> } } | null>(null);
+const currentStyle = ref<LayerStyleConfig | null>(null);
 
-let map: Map | null = null;
-let deck: Deck | null = null;
+// Create icon atlas from emoji/unicode characters dynamically
+const iconAtlas = computed(() => {
+  if (!currentStyle.value?.iconEmoji) return '';
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+  
+  ctx.font = 'bold 100px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(currentStyle.value.iconEmoji, 64, 64);
+  
+  return canvas.toDataURL();
+});
 
-// Brussels center
-const INITIAL_VIEW_STATE: MapViewState = {
-  longitude: 4.3517,
-  latitude: 50.8503,
-  zoom: 12,
-  pitch: 0,
-  bearing: 0,
+const iconMapping = {
+  marker: { x: 0, y: 0, width: 128, height: 128 },
 };
 
-// ============================================================================
-// Methods
-// ============================================================================
-
-function initializeMap(): void {
-  if (!mapContainer.value || !deckCanvas.value) return;
-
-  try {
-    // Initialize MapLibre
-    map = new Map({
-      container: mapContainer.value,
-      style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-      center: [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude],
-      zoom: INITIAL_VIEW_STATE.zoom,
-      interactive: false,
-    });
-
-    // Initialize Deck.gl
-    deck = new Deck({
-      canvas: deckCanvas.value,
-      width: '100%',
-      height: '100%',
-      initialViewState: INITIAL_VIEW_STATE,
-      controller: true,
-      useDevicePixels: true,
-      onViewStateChange: ({ viewState }) => {
-        if (map) {
-          map.jumpTo({
-            center: [viewState.longitude, viewState.latitude],
-            zoom: viewState.zoom,
-            bearing: viewState.bearing,
-            pitch: viewState.pitch,
-          });
-        }
-      },
-      layers: [],
-    });
-  } catch (err) {
-    console.error('Error initializing map:', err);
-    error.value = 'Failed to initialize map viewer';
-  }
-}
-
-async function fetchAndUpdateVehicles(): Promise<void> {
-  if (!props.dataset || !deck) return;
-
+// Fetch data function
+async function fetchData() {
+  if (!props.dataset) return;
+  
   loading.value = true;
   error.value = null;
-
+  
   try {
-    // Remove leading slash for ky prefixUrl compatibility
-    const endpoint = props.dataset.endpoint.startsWith('/')
-      ? props.dataset.endpoint.slice(1)
-      : props.dataset.endpoint;
+    // Map the dataset ID/name to the MobilitySource key
+    // Assuming the dataset.id corresponds to the keys in MobilityEndpoints (stib, sncb, etc.)
+    const source = props.dataset.id as MobilitySource;
+    
+    // Update style configuration
+    currentStyle.value = getLayerStyle(source);
 
-    // Use VITE_TWIN_API_TOKEN for realtime endpoints if available
-    const twinToken = import.meta.env.VITE_TWIN_API_TOKEN;
-    const options = twinToken
-      ? { headers: { Authorization: `Bearer ${twinToken}` } }
-      : {};
-
-    const data = await apiClient
-      .get(endpoint, options)
-      .json<VehicleGeoJSONCollection | VehicleFeature[]>();
-
-    let features: VehicleFeature[] = [];
-    if (Array.isArray(data)) {
-      features = data;
-    } else if (data && typeof data === 'object' && 'features' in data) {
-      features = data.features ?? [];
-    } else {
-      throw new Error('Unexpected API response format');
-    }
-
-    // Transform to vehicle data
-    const vehicles: VehicleData[] = features
-      .map((feature, index): VehicleData | null => {
-        const coords = feature.geometry?.coordinates;
-        if (!coords || coords.length < 2) return null;
-
-        const vehicleId = String(
-          feature.properties?.vehicleId ?? feature.properties?.id ?? `vehicle-${index}`
-        );
-        const routeId = String(
-          feature.properties?.routeShortName ?? feature.properties?.routeId ?? ''
-        );
-
-        return {
-          id: vehicleId,
-          longitude: coords[0] as number,
-          latitude: coords[1] as number,
-          routeId,
-          color: [255, 50, 50],
-        };
-      })
-      .filter((v): v is VehicleData => v !== null);
-
-    vehicleCount.value = vehicles.length;
-    lastUpdate.value = new Date().toLocaleTimeString();
-
-    updateLayers(vehicles);
-  } catch (err: unknown) {
-    console.error('Error fetching vehicle data:', err);
-
-    if (err instanceof HTTPError) {
-      const status = err.response.status;
-      if (status === 404) {
-        error.value = `API endpoint not found: ${props.dataset.endpoint}. Check your backend configuration.`;
-      } else if (status === 401 || status === 403) {
-        error.value =
-          'Authentication required. Check your Keycloak login or VITE_TWIN_API_TOKEN.';
-      } else {
-        error.value = `Server error (${status}): ${err.message}`;
-      }
-    } else if (err instanceof Error) {
-      error.value = err.message;
-    } else {
-      error.value = 'Failed to fetch vehicle positions. Check console for details.';
-    }
+    const response = await fetchMobilityData<VehicleGeoJSONCollection>(source);
+    geojsonData.value = response.data;
+  } catch (err) {
+    console.error('Error fetching realtime data:', err);
+    error.value = 'Failed to fetch realtime data';
   } finally {
     loading.value = false;
   }
 }
 
-function updateLayers(vehicles: VehicleData[]): void {
-  if (!deck) return;
+// Update layers function
+function updateLayers() {
+  if (!deckOverlay || !geojsonData.value || !currentStyle.value) return;
 
-  const layers = [
-    new ScatterplotLayer<VehicleData>({
-      id: 'vehicle-points',
-      data: vehicles,
-      getPosition: (d: VehicleData) => [d.longitude, d.latitude],
-      getFillColor: (d: VehicleData) => d.color,
-      getRadius: 10,
-      radiusMinPixels: 8,
-      radiusMaxPixels: 16,
-      lineWidthMinPixels: 2,
+  const layers = [];
+
+  // Use IconLayer for vehicle types (icon-based)
+  if (currentStyle.value.useIconLayer && currentStyle.value.iconEmoji) {
+    // Extract point data from GeoJSON
+    const pointData = geojsonData.value.features.map(feature => ({
+      coordinates: feature.geometry.coordinates,
+      properties: feature.properties,
+    }));
+
+    layers.push(
+      new IconLayer({
+        id: 'realtime-icons',
+        data: pointData,
+        pickable: true,
+        iconAtlas: iconAtlas.value,
+        iconMapping: iconMapping,
+        getIcon: () => 'marker',
+        getPosition: (d: any) => d.coordinates,
+        getSize: currentStyle.value?.iconSize || 40,
+        getColor: currentStyle.value?.iconColor || [255, 0, 0],
+        onClick: (info: { object?: any; x: number; y: number }) => {
+          if (info.object) {
+            selectedInfo.value = {
+              x: info.x,
+              y: info.y,
+              object: { properties: info.object.properties }
+            };
+          } else {
+            selectedInfo.value = null;
+          }
+        },
+      })
+    );
+  } else {
+    // Use GeoJsonLayer for circles and lines
+    const styleProps = currentStyle.value || {
+      pointType: 'circle',
+      getFillColor: [255, 0, 0, 200],
       getLineColor: [255, 255, 255],
-      stroked: true,
-      filled: true,
-      pickable: true,
-      autoHighlight: true,
-    }),
-    new TextLayer<VehicleData>({
-      id: 'vehicle-labels',
-      data: vehicles.filter((d) => d.routeId),
-      getPosition: (d: VehicleData) => [d.longitude, d.latitude],
-      getText: (d: VehicleData) => d.routeId ?? '',
-      getSize: 12,
-      getColor: [255, 255, 255],
-      getTextAnchor: 'middle',
-      getAlignmentBaseline: 'center',
-      fontFamily: 'Arial, sans-serif',
-      fontWeight: 'bold',
-      background: true,
-      getBackgroundColor: [0, 0, 0, 180],
-      backgroundPadding: [2, 1],
-    }),
-  ];
+      getPointRadius: 10,
+      getLineWidth: 2,
+    };
 
-  deck.setProps({ layers });
+    layers.push(
+      new GeoJsonLayer({
+        id: 'realtime-geojson',
+        data: geojsonData.value,
+        pickable: true,
+        stroked: true,
+        filled: true,
+        // Cast to any to bypass strict DeckGL typing mismatch with our loose config
+        ...(styleProps as any),
+        onClick: (info: { object?: { properties: Record<string, unknown> }; x: number; y: number }) => {
+          if (info.object) {
+            selectedInfo.value = {
+              x: info.x,
+              y: info.y,
+              object: info.object
+            };
+          } else {
+            selectedInfo.value = null;
+          }
+        },
+      })
+    );
+  }
+
+  deckOverlay.setProps({ layers });
 }
 
-function cleanup(): void {
-  if (deck) {
-    deck.finalize();
-    deck = null;
-  }
-  if (map) {
-    map.remove();
-    map = null;
-  }
-}
-
-// ============================================================================
-// Watchers
-// ============================================================================
-
-watch(
-  () => props.dataset,
-  (newDataset: RealtimeDataset) => {
-    if (newDataset && deck) {
-      void fetchAndUpdateVehicles();
-    }
-  }
-);
-
-// ============================================================================
-// Lifecycle
-// ============================================================================
-
-onMounted(() => {
-  initializeMap();
-  if (props.dataset) {
-    void fetchAndUpdateVehicles();
-  }
+// Watch for data changes to update map
+watch(geojsonData, () => {
+  updateLayers();
 });
 
-onBeforeUnmount(() => {
-  cleanup();
+// Watch for dataset changes to refetch
+watch(() => props.dataset, () => {
+  if (pollInterval.value) clearInterval(pollInterval.value);
+  geojsonData.value = null; // Clear previous data
+  
+  if (props.dataset) {
+    void fetchData();
+    // Start polling every 20 seconds
+    pollInterval.value = window.setInterval(fetchData, 20000);
+  }
+}, { immediate: true });
+
+onMounted(() => {
+  if (!container.value) return;
+
+  // Initialize MapLibre
+  map = new maplibregl.Map({
+    container: container.value,
+    style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+    center: [4.3517, 50.8503], // Brussels
+    zoom: 12,
+    pitch: 0,
+    bearing: 0
+  });
+
+  // Initialize DeckGL Overlay
+  deckOverlay = new MapboxOverlay({
+    layers: [],
+    interleaved: true, // Try interleaved mode
+  });
+
+  map.addControl(new maplibregl.NavigationControl());
+  map.addControl(deckOverlay as unknown as IControl);
+
+  // Clean up on unmount
+});
+
+onUnmounted(() => {
+  if (pollInterval.value) clearInterval(pollInterval.value);
+  if (map) map.remove();
+  if (deckOverlay) deckOverlay.finalize();
 });
 </script>
 
 <template>
   <div class="relative w-full h-full">
-    <!-- MapLibre container -->
-    <div ref="mapContainer" class="absolute inset-0 w-full h-full"></div>
-
-    <!-- Deck.gl canvas overlay -->
-    <canvas
-      ref="deckCanvas"
-      class="absolute inset-0 z-[1] pointer-events-auto bg-transparent"
-    ></canvas>
-
-    <!-- Control Panel -->
-    <div class="absolute top-4 right-4 bg-white rounded-lg shadow-lg px-4 py-3 space-y-2 z-10">
-      <div class="flex items-center justify-between gap-4">
-        <div class="text-sm">
-          <div class="font-bold text-gray-700">Vehicles: {{ vehicleCount }}</div>
-          <div v-if="lastUpdate" class="text-xs text-gray-500">Updated: {{ lastUpdate }}</div>
-        </div>
+    <div ref="container" class="w-full h-full"></div>
+    
+    <!-- Status Indicators -->
+    <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
+      <div v-if="loading" class="bg-white px-3 py-1 rounded shadow text-sm">
+        Updating...
       </div>
-
-      <button
-        :disabled="loading"
-        :class="[
-          'w-full px-4 py-2 rounded font-medium transition-colors',
-          loading
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700',
-        ]"
-        @click="fetchAndUpdateVehicles"
+      <div v-if="error" class="bg-red-500 text-white px-3 py-1 rounded shadow text-sm">
+        {{ error }}
+      </div>
+      <div v-if="geojsonData" class="bg-white px-3 py-1 rounded shadow text-sm">
+        {{ geojsonData.features?.length || 0 }} items
+      </div>
+    </div>
+    <!-- Tooltip -->
+    <div
+      v-if="selectedInfo"
+      class="absolute z-20 bg-white p-3 rounded shadow-lg text-sm max-w-xs"
+      :style="{ left: `${selectedInfo.x}px`, top: `${selectedInfo.y}px`, transform: 'translate(-50%, -100%)', marginTop: '-10px' }"
+    >
+      <div class="font-bold mb-1 border-b pb-1">Feature Details</div>
+      <div v-for="(value, key) in selectedInfo.object.properties" :key="key" class="grid grid-cols-2 gap-2">
+        <span class="font-semibold text-gray-600">{{ key }}:</span>
+        <span class="truncate">{{ value }}</span>
+      </div>
+      <button 
+        class="mt-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs py-1 rounded"
+        @click="selectedInfo = null"
       >
-        {{ loading ? 'Updating...' : 'Update Data' }}
+        Close
       </button>
     </div>
 
-    <!-- Error Display -->
-    <div
-      v-if="error"
-      class="absolute top-4 left-4 bg-red-100 border border-red-400 text-red-700 rounded-lg px-4 py-3 max-w-sm z-10"
+    <!-- Legend -->
+    <div 
+      v-if="currentStyle && currentStyle.legend"
+      class="absolute bottom-8 right-4 z-10 bg-white p-3 rounded shadow-lg text-sm"
     >
-      <p class="text-sm">{{ error }}</p>
+      <div class="font-bold mb-2 border-b pb-1">{{ currentStyle.legend.title }}</div>
+      <div 
+        v-for="(item, index) in currentStyle.legend.items" 
+        :key="index"
+        class="flex items-center mb-1"
+      >
+        <div 
+          class="w-4 h-4 rounded mr-2" 
+          :style="{ backgroundColor: item.color }"
+        ></div>
+        <span>{{ item.label }}</span>
+      </div>
     </div>
   </div>
 </template>
+

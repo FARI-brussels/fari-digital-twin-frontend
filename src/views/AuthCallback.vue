@@ -1,20 +1,32 @@
-<script setup>
+<script setup lang="ts">
 import { watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useKeycloak } from '@josempgon/vue-keycloak';
 
-const router = useRouter();
-const { isPending, isAuthenticated, hasFailed } = useKeycloak();
+// ============================================================================
+// Composables
+// ============================================================================
 
-const navigateHome = () => {
-  router.replace({ name: 'Home' });
-};
+const router = useRouter();
+const { isPending } = useKeycloak();
+
+// ============================================================================
+// Methods
+// ============================================================================
+
+function navigateHome(): void {
+  void router.replace({ name: 'Home' });
+}
+
+// ============================================================================
+// Navigation Logic
+// ============================================================================
 
 if (!isPending.value) {
   navigateHome();
 }
 
-watch(isPending, (pending) => {
+watch(isPending, (pending: boolean) => {
   if (!pending) {
     navigateHome();
   }

@@ -1,39 +1,67 @@
-<script setup>
-import { computed } from 'vue';
+<script setup lang="ts">
 import { deleteMapLayer as apiDeleteMapLayer } from '@/lib/api';
 import LibraryBase from '@/components/LibraryBase.vue';
 import MapViewer from '@/components/MapViewer.vue';
 import UploadMapLayer from '@/components/UploadMapLayer.vue';
+import type { MapLayer, LibraryItem, GroupedLayers } from '@/types';
 
-const groupedLayers = (layers) => {
+// ============================================================================
+// Types
+// ============================================================================
+
+interface MapLayerItem extends LibraryItem {
+  url: string;
+  layer: string;
+  description: string;
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+function groupedLayers(layers: LibraryItem[]): GroupedLayers {
   if (!Array.isArray(layers)) {
     return {};
   }
-  return layers.reduce((acc, layer) => {
+  return (layers as MapLayerItem[]).reduce<GroupedLayers>((acc, layer) => {
     const provider = layer.url;
     if (!acc[provider]) {
       acc[provider] = [];
     }
-    acc[provider].push(layer);
+    acc[provider].push(layer as MapLayer);
     return acc;
   }, {});
-};
+}
 
-const deleteMapLayer = async (layer) => {
+// ============================================================================
+// Delete Handler (Fixed bug: was missing deleteUrlBase parameter)
+// ============================================================================
+
+async function deleteMapLayer(layer: LibraryItem): Promise<void> {
+  const mapLayer = layer as MapLayerItem;
   try {
-    await apiDeleteMapLayer(layer);
+    await apiDeleteMapLayer('/maps-manager/delete', {
+      url: mapLayer.url,
+      layer: mapLayer.layer,
+    });
   } catch (err) {
     console.error('Error deleting map layer:', err);
-    // You should probably show an error message to the user
+    throw err;
   }
-};
+}
 
-const getCesiumJsSnippet = (layer) => `
+// ============================================================================
+// Code Snippets
+// ============================================================================
+
+function getCesiumJsSnippet(layer: LibraryItem): string {
+  const mapLayer = layer as MapLayerItem;
+  return `
 import { Viewer, WebMapServiceImageryProvider } from 'cesium';
 const viewer = new Viewer('cesiumContainer');
 const wmsProvider = new WebMapServiceImageryProvider({
-    url: '${layer.url}',
-    layers: '${layer.layer}',
+    url: '${mapLayer.url}',
+    layers: '${mapLayer.layer}',
     parameters: {
         transparent: true,
         format: 'image/png'
@@ -41,8 +69,11 @@ const wmsProvider = new WebMapServiceImageryProvider({
 });
 viewer.imageryLayers.addImageryProvider(wmsProvider);
 `.trim();
+}
 
-const getCesiumUnitySnippet = (layer) => `
+function getCesiumUnitySnippet(layer: LibraryItem): string {
+  const mapLayer = layer as MapLayerItem;
+  return `
 using UnityEngine;
 using CesiumForUnity;
 public class AddWmsLayer : MonoBehaviour
@@ -50,11 +81,12 @@ public class AddWmsLayer : MonoBehaviour
     void Start()
     {
         CesiumWebMapServiceRasterOverlay wmsOverlay = this.gameObject.AddComponent<CesiumWebMapServiceRasterOverlay>();
-        wmsOverlay.baseUrl = "${layer.url}";
-        wmsOverlay.layers = "${layer.layer}";
+        wmsOverlay.baseUrl = "${mapLayer.url}";
+        wmsOverlay.layers = "${mapLayer.layer}";
     }
 }
 `.trim();
+}
 
 const codeSnippets = {
   js: getCesiumJsSnippet,
@@ -63,19 +95,36 @@ const codeSnippets = {
 </script>
 
 <template>
-  <LibraryBase title="Map Layer Library" itemType="map" fetchUrl="/maps-manager/all" :viewerComponent="MapViewer"
-    :uploadComponent="UploadMapLayer" :codeSnippets="codeSnippets" :deleteItem="deleteMapLayer">
+  <LibraryBase
+    title="Map Layer Library"
+    itemType="map"
+    fetchUrl="/maps-manager/all"
+    :viewerComponent="MapViewer"
+    :uploadComponent="UploadMapLayer"
+    :codeSnippets="codeSnippets"
+    :deleteItem="deleteMapLayer"
+  >
     <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
       <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="mb-5">
         <h2 class="text-lg font-bold bg-gray-100 px-4 py-2 border-b">{{ provider }}</h2>
         <ul>
-          <li v-for="layer in layers" :key="layer.layer"
+          <li
+            v-for="layer in layers"
+            :key="layer.layer"
             class="flex justify-between items-center px-4 py-2 border-b cursor-pointer hover:bg-gray-100"
-            :class="{ 'bg-blue-50': selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url }"
-            @click="selectItem(layer)">
+            :class="{
+              'bg-blue-50':
+                selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url,
+            }"
+            @click="selectItem(layer)"
+          >
             <div class="font-bold">{{ layer.description }}</div>
-            <button @click.stop="deleteItem(layer)"
-              class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">Delete</button>
+            <button
+              @click.stop="deleteItem(layer)"
+              class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </button>
           </li>
         </ul>
       </div>

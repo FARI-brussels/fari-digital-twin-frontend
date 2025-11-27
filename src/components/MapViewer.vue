@@ -1,34 +1,48 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
+import type { MapLayer } from '@/types';
 
-const props = defineProps({
-  mapLayer: {
-    type: Object,
-    required: true,
-  },
-});
+// ============================================================================
+// Props Definition
+// ============================================================================
 
-const cesiumContainer = ref(null);
-let viewer;
-let currentImageryLayer = null;
+interface Props {
+  mapLayer: MapLayer;
+}
 
-const legendUrl = computed(() => {
+const props = defineProps<Props>();
+
+// ============================================================================
+// State
+// ============================================================================
+
+const cesiumContainer = ref<HTMLDivElement | null>(null);
+
+let viewer: Cesium.Viewer | null = null;
+let currentImageryLayer: Cesium.ImageryLayer | null = null;
+
+// ============================================================================
+// Computed
+// ============================================================================
+
+const legendUrl = computed<string>(() => {
   const layerInfo = props.mapLayer;
-  if (layerInfo && layerInfo.url && layerInfo.layer) {
+  if (layerInfo?.url && layerInfo.layer) {
     const baseUrl = layerInfo.url.split('?')[0];
     return `${baseUrl}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=${layerInfo.layer}`;
   }
   return '';
 });
 
-const initializeViewer = () => {
+// ============================================================================
+// Methods
+// ============================================================================
+
+function initializeViewer(): void {
   if (cesiumContainer.value && !viewer) {
     viewer = new Cesium.Viewer(cesiumContainer.value, {
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/'
-      }),
       sceneMode: Cesium.SceneMode.SCENE2D,
       baseLayerPicker: false,
       timeline: false,
@@ -38,14 +52,21 @@ const initializeViewer = () => {
       sceneModePicker: false,
       navigationHelpButton: false,
     });
+
+    // Add OpenStreetMap imagery layer
+    viewer.imageryLayers.addImageryProvider(
+      new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org/',
+      })
+    );
     viewer.camera.setView({
-      destination: Cesium.Rectangle.fromDegrees(4.25, 50.75, 4.45, 50.95)
+      destination: Cesium.Rectangle.fromDegrees(4.25, 50.75, 4.45, 50.95),
     });
   }
-};
+}
 
-const updateMapLayer = (newMapLayer) => {
-  if (viewer && newMapLayer && newMapLayer.url && newMapLayer.layer) {
+function updateMapLayer(newMapLayer: MapLayer): void {
+  if (viewer && newMapLayer?.url && newMapLayer.layer) {
     if (currentImageryLayer) {
       viewer.imageryLayers.remove(currentImageryLayer, false);
     }
@@ -56,16 +77,28 @@ const updateMapLayer = (newMapLayer) => {
         parameters: {
           service: 'WMS',
           transparent: true,
-          format: 'image/png'
+          format: 'image/png',
         },
       })
     );
   }
-};
+}
 
-watch(() => props.mapLayer, (newMapLayer) => {
-  updateMapLayer(newMapLayer);
-}, { immediate: true });
+// ============================================================================
+// Watchers
+// ============================================================================
+
+watch(
+  () => props.mapLayer,
+  (newMapLayer: MapLayer) => {
+    updateMapLayer(newMapLayer);
+  },
+  { immediate: true }
+);
+
+// ============================================================================
+// Lifecycle
+// ============================================================================
 
 onMounted(() => {
   initializeViewer();

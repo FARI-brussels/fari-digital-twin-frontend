@@ -83,6 +83,7 @@ export interface RealtimeDataset {
   description: string;
   endpoint: string;
   type: string;
+  url?: string; // Optional for compatibility with LibraryItem
 }
 
 // ============================================================================

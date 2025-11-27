@@ -1,46 +1,43 @@
-<template>
-  <div class="tileset-viewer-wrapper">
-      <div ref="viewerContainer" class="viewer-container"></div>
-      <div class="controls-overlay">
-        <label class="wms-toggle">
-          <input 
-            type="checkbox" 
-            v-model="showWmsLayer" 
-            @change="toggleWmsLayer"
-          />
-          <span>UrbIS Base Map</span>
-        </label>
-      </div>
-      <div v-if="loading" class="loading-indicator">Loading Tileset...</div>
-      <div v-if="error" class="error-message">{{ error }}</div>
-  </div>
-</template>
-
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-const props = defineProps({
-  tilesetUrl: {
-    type: String,
-    required: true,
-  },
-});
+// ============================================================================
+// Props Definition
+// ============================================================================
 
-const viewerContainer = ref(null);
+interface Props {
+  tilesetUrl: string;
+}
+
+const props = defineProps<Props>();
+
+// ============================================================================
+// State
+// ============================================================================
+
+const viewerContainer = ref<HTMLDivElement | null>(null);
 const loading = ref(true);
-const error = ref(null);
+const error = ref<string | null>(null);
 const showWmsLayer = ref(true);
-let viewer;
-let currentTileset = null;
-let wmsImageryLayer = null;
 
-const initializeViewer = () => {
+let viewer: Cesium.Viewer | null = null;
+let currentTileset: Cesium.Cesium3DTileset | null = null;
+let wmsImageryLayer: Cesium.ImageryLayer | null = null;
+
+// ============================================================================
+// Methods
+// ============================================================================
+
+function initializeViewer(): void {
   if (viewerContainer.value && !viewer) {
     // Set Cesium Ion access token
-    Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
-    
+    const cesiumToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
+    if (cesiumToken) {
+      Cesium.Ion.defaultAccessToken = cesiumToken;
+    }
+
     viewer = new Cesium.Viewer(viewerContainer.value, {
       timeline: false,
       animation: false,
@@ -51,26 +48,26 @@ const initializeViewer = () => {
       selectionIndicator: true,
       navigationHelpButton: false,
       infoBox: true,
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/'
-      }),
     });
-    
-    // Set terrain using the scene method
-    viewer.scene.setTerrain(
-      new Cesium.Terrain(
-        Cesium.CesiumTerrainProvider.fromIonAssetId(3340034),
-      ),
+
+    // Add OpenStreetMap imagery layer
+    viewer.imageryLayers.addImageryProvider(
+      new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://a.tile.openstreetmap.org/',
+      })
     );
-    
+
+    // Set terrain using the scene method
+    viewer.scene.setTerrain(new Cesium.Terrain(Cesium.CesiumTerrainProvider.fromIonAssetId(3340034)));
+
     // Add WMS layer by default
     addWmsLayer();
   }
-};
+}
 
-const addWmsLayer = () => {
+function addWmsLayer(): void {
   if (!viewer || wmsImageryLayer) return;
-  
+
   try {
     const wmsProvider = new Cesium.WebMapServiceImageryProvider({
       url: 'https://geoservices-urbis.irisnet.be/geoserver/BaseMaps/ows',
@@ -79,31 +76,31 @@ const addWmsLayer = () => {
         service: 'WMS',
         format: 'image/png',
         transparent: true,
-      }
+      },
     });
-    
+
     wmsImageryLayer = viewer.imageryLayers.addImageryProvider(wmsProvider);
   } catch (err) {
     console.error('Failed to add WMS layer:', err);
   }
-};
+}
 
-const removeWmsLayer = () => {
+function removeWmsLayer(): void {
   if (viewer && wmsImageryLayer) {
     viewer.imageryLayers.remove(wmsImageryLayer);
     wmsImageryLayer = null;
   }
-};
+}
 
-const toggleWmsLayer = () => {
+function toggleWmsLayer(): void {
   if (showWmsLayer.value) {
     addWmsLayer();
   } else {
     removeWmsLayer();
   }
-};
+}
 
-const loadTileset = async (url) => {
+async function loadTileset(url: string): Promise<void> {
   if (!viewer || !url) return;
 
   loading.value = true;
@@ -113,28 +110,39 @@ const loadTileset = async (url) => {
     if (currentTileset) {
       viewer.scene.primitives.remove(currentTileset);
     }
-    
+
     const tileset = await Cesium.Cesium3DTileset.fromUrl(url);
-    currentTileset = viewer.scene.primitives.add(tileset);
+    currentTileset = viewer.scene.primitives.add(tileset) as Cesium.Cesium3DTileset;
 
     await viewer.zoomTo(tileset);
-
   } catch (err) {
     console.error('Failed to load tileset:', err);
     error.value = 'Error loading tileset. The URL might be invalid or inaccessible.';
   } finally {
     loading.value = false;
   }
-};
+}
 
-watch(() => props.tilesetUrl, (newUrl) => {
-  loadTileset(newUrl);
-}, { immediate: true });
+// ============================================================================
+// Watchers
+// ============================================================================
+
+watch(
+  () => props.tilesetUrl,
+  (newUrl: string) => {
+    void loadTileset(newUrl);
+  },
+  { immediate: true }
+);
+
+// ============================================================================
+// Lifecycle
+// ============================================================================
 
 onMounted(() => {
   initializeViewer();
   if (props.tilesetUrl) {
-    loadTileset(props.tilesetUrl);
+    void loadTileset(props.tilesetUrl);
   }
 });
 
@@ -144,63 +152,33 @@ onBeforeUnmount(() => {
     viewer = null;
   }
 });
-
 </script>
 
-<style scoped>
-.tileset-viewer-wrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background-color: #000;
-}
-
-.viewer-container {
-  width: 100%;
-  height: 100%;
-}
-
-.controls-overlay {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 100;
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 10px;
-  border-radius: 5px;
-}
-
-.wms-toggle {
-  display: flex;
-  align-items: center;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.wms-toggle input[type="checkbox"] {
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-.wms-toggle span {
-  cursor: pointer;
-}
-
-.loading-indicator, .error-message {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  background-color: rgba(0,0,0,0.8);
-  padding: 15px;
-  border-radius: 5px;
-  z-index: 10;
-}
-
-.error-message {
-  color: #ffcccc;
-}
-</style> 
+<template>
+  <div class="w-full h-full relative bg-black">
+    <div ref="viewerContainer" class="w-full h-full"></div>
+    <div class="absolute top-2.5 right-2.5 z-[100] bg-black/80 p-2.5 rounded">
+      <label class="flex items-center text-white text-sm cursor-pointer select-none">
+        <input
+          type="checkbox"
+          v-model="showWmsLayer"
+          class="mr-2 cursor-pointer"
+          @change="toggleWmsLayer"
+        />
+        <span class="cursor-pointer">UrbIS Base Map</span>
+      </label>
+    </div>
+    <div
+      v-if="loading"
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/80 px-4 py-2 rounded z-10"
+    >
+      Loading Tileset...
+    </div>
+    <div
+      v-if="error"
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-red-200 bg-black/80 px-4 py-2 rounded z-10"
+    >
+      {{ error }}
+    </div>
+  </div>
+</template>

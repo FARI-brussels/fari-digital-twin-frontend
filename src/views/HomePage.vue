@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Layout from "../components/Layout.vue";
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import bxlScreenshot from '@/assets/bxl_screenshot.png';
 </script>
 

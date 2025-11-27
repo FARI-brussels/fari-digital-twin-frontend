@@ -73,9 +73,6 @@ export function useMapViewer(initialViewState: ViewState): UseMapViewerReturn {
         initialViewState,
         controller: true,
         useDevicePixels: true,
-        parameters: {
-          clearColor: [0, 0, 0, 0] // Transparent background
-        },
         onViewStateChange: ({ viewState }) => {
           if (map) {
             map.jumpTo({

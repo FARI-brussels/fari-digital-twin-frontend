@@ -5,7 +5,7 @@ import { GeoJsonLayer, IconLayer } from '@deck.gl/layers';
 import maplibregl, { type IControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { RealtimeDataset, VehicleGeoJSONCollection } from '@/types';
-import { fetchMobilityData, type MobilitySource } from '@/lib/api';
+import { fetchMobilityData, type MobilitySource } from '@/api/mobilityClient';
 import { getLayerStyle, type LayerStyleConfig } from '@/lib/layerStyles';
 
 const props = defineProps<{
@@ -62,8 +62,28 @@ async function fetchData() {
     // Update style configuration
     currentStyle.value = getLayerStyle(source);
 
-    const response = await fetchMobilityData<VehicleGeoJSONCollection>(source);
-    geojsonData.value = response.data;
+    // API response wrapper type (Mobility Twin API wraps GeoJSON in metadata)
+    interface MobilityApiResponse {
+      status_code: number;
+      message: string;
+      type: string;
+      features: VehicleGeoJSONCollection['features'];
+    }
+
+    const response = await fetchMobilityData<MobilityApiResponse | VehicleGeoJSONCollection>(source);
+    
+    // Normalize response: API returns wrapper object with status_code, message, type, features
+    // DeckGL expects standard GeoJSON: { type: "FeatureCollection", features: [...] }
+    if ('status_code' in response) {
+      // Wrapped response from Mobility Twin API
+      geojsonData.value = {
+        type: 'FeatureCollection',
+        features: response.features,
+      };
+    } else {
+      // Already a standard GeoJSON
+      geojsonData.value = response;
+    }
   } catch (err) {
     console.error('Error fetching realtime data:', err);
     error.value = 'Failed to fetch realtime data';

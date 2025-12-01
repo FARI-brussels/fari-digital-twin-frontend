@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import LibraryBase from '@/components/LibraryBase.vue';
 import RealtimeViewer from '@/components/RealtimeViewer.vue';
-import { MobilityEndpoints } from '@/lib/api';
+import { MobilityEndpoints } from '@/api/mobilityClient';
 import type { RealtimeDataset, LibraryItem } from '@/types';
-import type { ApiResponse } from '@/types';
 
 // Transform the endpoints configuration into the list of "datasets"
 // Each endpoint becomes an item in the sidebar list
@@ -27,7 +26,7 @@ const codeSnippets = {
   js: (item: LibraryItem) => {
     const dataset = item as unknown as RealtimeDataset;
     return `// Fetch ${dataset.name} data
-import { fetchMobilityData } from '@/lib/api';
+import { fetchMobilityData } from '@/api/mobilityClient';
 
 async function getData() {
   const response = await fetchMobilityData('${dataset.id}');
@@ -38,13 +37,13 @@ async function getData() {
     const dataset = item as unknown as RealtimeDataset;
     return `// React Hook for ${dataset.name}
 import { useState, useEffect } from 'react';
-import { fetchMobilityData } from '@/lib/api';
+import { fetchMobilityData } from '@/api/mobilityClient';
 
 export function use${dataset.name.replace(/\s/g, '')}() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    fetchMobilityData('${dataset.id}').then(res => setData(res.data));
+    fetchMobilityData('${dataset.id}').then(setData);
   }, []);
 
   return data;
@@ -58,15 +57,6 @@ export function use${dataset.name.replace(/\s/g, '')}() {
   }
 };
 
-// Custom fetch function to return our static list as an AxiosResponse structure
-// LibraryBase expects a promise resolving to ApiResponse<T[]>
-async function fetchRealtimeDatasets(): Promise<ApiResponse<RealtimeDataset[]>> {
-  return {
-    data: realtimeDatasets,
-    status: 200,
-    statusText: 'OK'
-  };
-}
 
 // We don't need upload/delete for these system-defined endpoints
 </script>
@@ -77,7 +67,10 @@ async function fetchRealtimeDatasets(): Promise<ApiResponse<RealtimeDataset[]>> 
     item-type="dataset"
     :viewer-component="RealtimeViewer"
     :code-snippets="codeSnippets"
-    :custom-fetch="fetchRealtimeDatasets"
+    :items="[]"
+    :is-loading="false"
+    :error="null"
+    :static-items="realtimeDatasets"
   >
     <template #list-item="{ items, selectedItem, selectItem }">
       <li

@@ -5,14 +5,13 @@
  */
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-vue-next';
 
 // ============================================================================
@@ -45,17 +44,26 @@ const emit = defineEmits<{
 }>();
 
 // ============================================================================
+// State
+// ============================================================================
+
+let isConfirming = false;
+
+// ============================================================================
 // Handlers
 // ============================================================================
 
 function handleOpenChange(value: boolean): void {
   emit('update:open', value);
-  if (!value) {
+  // Only emit cancel if dialog closed without confirming
+  if (!value && !isConfirming) {
     emit('cancel');
   }
+  isConfirming = false;
 }
 
 function handleConfirm(): void {
+  isConfirming = true;
   emit('confirm');
 }
 
@@ -96,13 +104,17 @@ function handleCancel(): void {
         </div>
       </AlertDialogHeader>
       <AlertDialogFooter class="mt-4">
-        <AlertDialogCancel :disabled="props.loading" @click="handleCancel">
+        <Button
+          variant="outline"
+          :disabled="props.loading"
+          @click="handleCancel"
+        >
           {{ props.cancelText }}
-        </AlertDialogCancel>
-        <AlertDialogAction
+        </Button>
+        <Button
           :disabled="props.loading"
           :class="{
-            'bg-destructive text-destructive-foreground hover:bg-destructive/90': props.variant === 'danger',
+            'bg-red-600 text-white hover:bg-red-700': props.variant === 'danger',
             'bg-amber-500 text-white hover:bg-amber-600': props.variant === 'warning',
           }"
           @click="handleConfirm"
@@ -115,7 +127,7 @@ function handleCancel(): void {
             Deleting...
           </span>
           <span v-else>{{ props.confirmText }}</span>
-        </AlertDialogAction>
+        </Button>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

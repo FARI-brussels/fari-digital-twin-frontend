@@ -7,6 +7,14 @@
 import { ref, computed, watch, type Component, type Ref } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LoginPrompt from '@/components/LoginPrompt.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import type { ItemType, CodeLanguage, LibraryItem } from '@/types';
@@ -53,7 +61,7 @@ const { isAuthenticated, canWrite } = useAuth();
 // ============================================================================
 
 const selectedItem = ref<LibraryItem | null>(null) as Ref<LibraryItem | null>;
-const showUploadPage = ref(false);
+const showUploadDialog = ref(false);
 const selectedLanguage = ref<CodeLanguage>('js');
 const deleteError = ref<string | null>(null);
 const copiedCode = ref(false);
@@ -155,7 +163,7 @@ watch(
 // ============================================================================
 
 function handleItemUploaded(): void {
-  showUploadPage.value = false;
+  showUploadDialog.value = false;
   emit('uploaded');
 }
 
@@ -220,54 +228,42 @@ async function copyCode(): Promise<void> {
 </script>
 
 <template>
-  <div class="h-full flex">
-    <!-- Upload Page (full width takeover) -->
-    <component
-      :is="uploadComponent"
-      v-if="showUploadPage && uploadComponent"
-      @uploaded="handleItemUploaded"
-      @cancel="showUploadPage = false"
-    />
+  <div class="flex h-full w-full">
+    <!-- Sidebar -->
+    <Card class="w-2/5 flex flex-col rounded-none border-r border-border">
+      <CardHeader class="flex-shrink-0 border-b border-border pb-4">
+        <div class="flex items-center justify-between">
+          <CardTitle class="text-xl">{{ title }}</CardTitle>
 
-    <!-- Main Library View -->
-    <div v-else class="flex w-full h-full">
-      <!-- Sidebar -->
-      <div class="w-2/5 flex flex-col border-r border-border bg-card">
-        <!-- Header -->
-        <div class="px-5 py-4 border-b border-border bg-gradient-to-r from-muted/50 to-muted/30">
-          <div class="flex justify-between items-center">
-            <h1 class="text-foreground text-xl font-bold">{{ title }}</h1>
+          <!-- Upload button (authenticated only) -->
+          <Button
+            v-if="canUpload"
+            size="sm"
+            @click="showUploadDialog = true"
+          >
+            <Plus class="mr-1 h-4 w-4" />
+            Add {{ itemType }}
+          </Button>
 
-            <!-- Upload button (authenticated only) -->
-            <Button
-              v-if="canUpload"
-              variant="default"
-              size="sm"
-              class="bg-primary hover:bg-primary/90"
-              @click="showUploadPage = true"
-            >
-              <Plus class="w-4 h-4 mr-1" />
-              Add {{ itemType }}
-            </Button>
-
-            <!-- Login prompt for unauthenticated users -->
-            <LoginPrompt
-              v-else-if="uploadComponent && !isAuthenticated"
-              compact
-              :action="`add ${itemType}s`"
-            />
-          </div>
+          <!-- Login prompt for unauthenticated users -->
+          <LoginPrompt
+            v-else-if="uploadComponent && !isAuthenticated"
+            compact
+            :action="`add ${itemType}s`"
+          />
         </div>
+      </CardHeader>
 
+      <CardContent class="flex-1 overflow-hidden p-0">
         <!-- Error Message -->
-        <div v-if="displayError" class="px-5 py-3 bg-destructive/10 border-b border-destructive/20">
+        <div v-if="displayError" class="border-b border-destructive/20 bg-destructive/10 px-5 py-3">
           <p class="text-sm text-destructive">{{ displayError }}</p>
         </div>
 
         <!-- Loading State -->
-        <div v-if="displayLoading" class="flex-1 flex items-center justify-center">
+        <div v-if="displayLoading" class="flex h-full items-center justify-center">
           <div class="text-center">
-            <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             <p class="text-muted-foreground">Loading {{ itemType }}s...</p>
           </div>
         </div>
@@ -275,10 +271,10 @@ async function copyCode(): Promise<void> {
         <!-- Empty State -->
         <div
           v-else-if="displayItems.length === 0"
-          class="flex-1 flex items-center justify-center p-5"
+          class="flex h-full items-center justify-center p-5"
         >
           <div class="text-center">
-            <p class="text-muted-foreground mb-2">No {{ itemType }}s found.</p>
+            <p class="mb-2 text-muted-foreground">No {{ itemType }}s found.</p>
             <p v-if="uploadComponent && !isAuthenticated" class="text-sm text-muted-foreground">
               Sign in to add your first {{ itemType }}.
             </p>
@@ -286,7 +282,7 @@ async function copyCode(): Promise<void> {
         </div>
 
         <!-- Items List -->
-        <div v-else class="flex-1 overflow-y-auto">
+        <div v-else class="h-full overflow-y-auto">
           <ul>
             <slot
               name="list-item"
@@ -299,33 +295,35 @@ async function copyCode(): Promise<void> {
             />
           </ul>
         </div>
-      </div>
+      </CardContent>
+    </Card>
 
-      <!-- Main Content -->
-      <div class="w-3/5 p-5 flex flex-col overflow-hidden bg-background">
-        <div v-if="selectedItem" class="flex flex-col h-full overflow-hidden">
-          <!-- Viewer -->
-          <div class="bg-muted rounded-lg mb-5 flex-[3] min-h-0 overflow-hidden">
-            <component :is="viewerComponent" v-bind="viewerProps" />
-          </div>
+    <!-- Main Content -->
+    <div class="flex w-3/5 flex-col overflow-hidden bg-background p-5">
+      <div v-if="selectedItem" class="flex h-full flex-col overflow-hidden">
+        <!-- Viewer -->
+        <div class="mb-5 min-h-0 flex-[3] overflow-hidden rounded-lg bg-muted">
+          <component :is="viewerComponent" v-bind="viewerProps" />
+        </div>
 
-          <!-- Code Snippets -->
-          <div class="flex-[2] flex flex-col min-h-0 overflow-hidden">
-            <div class="flex justify-between items-center mb-3 flex-shrink-0">
+        <!-- Code Snippets -->
+        <Card class="min-h-0 flex-[2] overflow-hidden">
+          <CardHeader class="flex-shrink-0 py-3">
+            <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <Code class="w-5 h-5 text-muted-foreground" />
-                <h3 class="font-semibold text-foreground">Integration Code</h3>
+                <Code class="h-5 w-5 text-muted-foreground" />
+                <CardTitle class="text-base">Integration Code</CardTitle>
               </div>
               <div class="flex items-center gap-2">
                 <!-- Language tabs -->
-                <div class="flex bg-muted rounded-lg p-1">
+                <div class="flex rounded-lg bg-muted p-1">
                   <button
                     v-for="(_, lang) in codeSnippets"
                     :key="lang"
                     :class="[
-                      'px-3 py-1.5 text-sm rounded-md transition-colors',
+                      'rounded-md px-3 py-1.5 text-sm transition-colors',
                       selectedLanguage === lang
-                        ? 'bg-background text-foreground shadow-sm font-medium'
+                        ? 'bg-background font-medium text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground',
                     ]"
                     @click="selectedLanguage = lang as CodeLanguage"
@@ -340,32 +338,49 @@ async function copyCode(): Promise<void> {
                   class="gap-1"
                   @click="copyCode"
                 >
-                  <Check v-if="copiedCode" class="w-4 h-4 text-accent" />
-                  <Copy v-else class="w-4 h-4" />
+                  <Check v-if="copiedCode" class="h-4 w-4 text-secondary" />
+                  <Copy v-else class="h-4 w-4" />
                   {{ copiedCode ? 'Copied!' : 'Copy' }}
                 </Button>
               </div>
             </div>
-            <pre
-              class="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-auto flex-1 min-h-0 text-sm font-mono"
-            ><code>{{ currentCodeSnippet }}</code></pre>
-          </div>
-        </div>
+          </CardHeader>
+          <CardContent class="flex-1 overflow-auto p-0">
+            <pre class="h-full overflow-auto bg-slate-900 p-4 font-mono text-sm text-slate-100"><code>{{ currentCodeSnippet }}</code></pre>
+          </CardContent>
+        </Card>
+      </div>
 
-        <!-- Empty State -->
-        <div v-else class="flex items-center justify-center h-full">
-          <div class="text-center">
-            <div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <Code class="w-8 h-8 text-muted-foreground" />
-            </div>
-            <p class="text-muted-foreground">
-              Select an {{ itemType }} from the list to visualize it and get the integration code.
-            </p>
+      <!-- Empty State -->
+      <div v-else class="flex h-full items-center justify-center">
+        <div class="text-center">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <Code class="h-8 w-8 text-muted-foreground" />
           </div>
+          <p class="text-muted-foreground">
+            Select an {{ itemType }} from the list to visualize it and get the integration code.
+          </p>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Upload Dialog (Modal) -->
+  <Dialog v-model:open="showUploadDialog">
+    <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader class="sr-only">
+        <DialogTitle>Add {{ itemType }}</DialogTitle>
+        <DialogDescription>Upload a new {{ itemType }} to the library</DialogDescription>
+      </DialogHeader>
+      <component
+        :is="uploadComponent"
+        v-if="uploadComponent"
+        @uploaded="handleItemUploaded"
+        @cancel="showUploadDialog = false"
+      />
+    </DialogContent>
+  </Dialog>
+
   <!-- Delete Confirmation Dialog -->
   <ConfirmDialog
     v-model:open="showDeleteConfirm"

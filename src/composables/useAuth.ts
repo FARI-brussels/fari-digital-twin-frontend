@@ -69,6 +69,23 @@ export function useAuth() {
     keycloak.value?.register({ redirectUri: keycloakRedirectUri });
   }
 
+  /**
+   * Get current access token (for use with external libraries like Cesium)
+   * Returns null if not authenticated
+   */
+  async function getToken(): Promise<string | null> {
+    const kc = keycloak.value;
+    if (!kc || !isAuthenticated.value) return null;
+
+    try {
+      // Refresh token if needed (within 30 seconds of expiry)
+      await kc.updateToken(30);
+      return kc.token ?? null;
+    } catch {
+      return kc.token ?? null;
+    }
+  }
+
   return {
     // State
     isAuthenticated,
@@ -81,6 +98,7 @@ export function useAuth() {
     // Actions
     login,
     register,
+    getToken,
     // Raw keycloak instance for advanced usage
     keycloak,
   };

@@ -22,3 +22,18 @@ export const apiClient = ky.create({
     ],
   },
 });
+
+export const mobilityTwinClient = ky.create({
+  prefixUrl: 'https://api.mobilitytwin.brussels',
+  timeout: 30000,
+  hooks: {
+    beforeRequest: [
+      request => {
+        const twinToken = import.meta.env.VITE_TWIN_API_TOKEN;
+        if (twinToken) {
+          request.headers.set('Authorization', `Bearer ${twinToken}`);
+        }
+      },
+    ],
+  },
+});

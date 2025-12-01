@@ -3,7 +3,7 @@
  */
 
 // Client
-export { apiClient } from './client';
+export { apiClient, mobilityTwinClient } from './client';
 
 // Query Keys
 export { queryKeys } from './queryKeys';

@@ -5,25 +5,20 @@ export interface LegendItem {
 }
 
 export interface LayerStyleConfig {
-  // Props specific to GeoJsonLayer
-  pointType?: 'circle' | 'icon' | 'text';
-  
-  // Accessors - using simpler types to avoid complex DeckGL typings issues
+  // GeoJsonLayer point props
   getFillColor?: unknown;
   getLineColor?: unknown;
   getLineWidth?: unknown;
-  getPointRadius?: unknown;
+  getRadius?: unknown; // For point features (circles)
+  pointRadiusMinPixels?: number;
+  pointRadiusMaxPixels?: number;
+  pointRadiusScale?: number;
   
   // Icon specific (for IconLayer)
   useIconLayer?: boolean;
   iconEmoji?: string;
   iconSize?: number;
   iconColor?: [number, number, number];
-  
-  // Legacy icon props (unused now)
-  getIcon?: unknown;
-  iconAtlas?: string;
-  iconMapping?: unknown;
   
   // Legend
   legend?: {
@@ -32,11 +27,120 @@ export interface LayerStyleConfig {
   };
 }
 
+// Color interpolation helper - interpolates between two RGB colors
+function interpolateColor(
+  color1: [number, number, number],
+  color2: [number, number, number],
+  t: number
+): [number, number, number] {
+  return [
+    Math.round(color1[0] + (color2[0] - color1[0]) * t),
+    Math.round(color1[1] + (color2[1] - color1[1]) * t),
+    Math.round(color1[2] + (color2[2] - color1[2]) * t)
+  ];
+}
+
+// Convert RGB to hex
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+// Gradient color stops: green → yellow → orange → red
+const GRADIENT_STOPS: [number, number, number][] = [
+  [0, 200, 0],    // Green (good/low)
+  [255, 255, 0],  // Yellow
+  [255, 165, 0],  // Orange
+  [255, 0, 0]     // Red (bad/high)
+];
+
+// Get color from gradient based on normalized value (0-1)
+function getGradientColor(normalizedValue: number, alpha?: number): [number, number, number] | [number, number, number, number] {
+  const t = Math.max(0, Math.min(1, normalizedValue));
+  const segmentCount = GRADIENT_STOPS.length - 1;
+  const segment = Math.min(Math.floor(t * segmentCount), segmentCount - 1);
+  const localT = (t * segmentCount) - segment;
+  
+  const color = interpolateColor(
+    GRADIENT_STOPS[segment] as [number, number, number],
+    GRADIENT_STOPS[segment + 1] as [number, number, number],
+    localT
+  );
+  
+  if (alpha !== undefined) {
+    return [...color, alpha] as [number, number, number, number];
+  }
+  return color;
+}
+
+// Create a gradient legend based on min/max values
+export function createGradientLegend(
+  title: string,
+  min: number,
+  max: number,
+  steps: number = 4,
+  unit: string = ''
+): { title: string; items: LegendItem[] } {
+  const items: LegendItem[] = [];
+  const range = max - min;
+  
+  for (let i = 0; i < steps; i++) {
+    const normalizedValue = i / (steps - 1);
+    const color = getGradientColor(normalizedValue);
+    const valueStart = min + (range * i / (steps - 1));
+    const valueEnd = i < steps - 1 ? min + (range * (i + 1) / (steps - 1)) : max;
+    
+    let label: string;
+    if (i === 0) {
+      label = `≤ ${Math.round(valueEnd)}${unit}`;
+    } else if (i === steps - 1) {
+      label = `> ${Math.round(valueStart)}${unit}`;
+    } else {
+      label = `${Math.round(valueStart)} - ${Math.round(valueEnd)}${unit}`;
+    }
+    
+    items.push({
+      color: rgbToHex(color[0], color[1], color[2]),
+      label
+    });
+  }
+  
+  return { title, items };
+}
+
+// Get color for a value based on min/max range
+export function getValueColor(
+  value: number,
+  min: number,
+  max: number,
+  alpha?: number
+): [number, number, number] | [number, number, number, number] {
+  const normalizedValue = (value - min) / (max - min);
+  return getGradientColor(normalizedValue, alpha);
+}
+
+// Traffic thresholds for Telraam
+const TRAFFIC_MIN = 0;
+const TRAFFIC_MAX = 500;
+
 // Helper for Telraam color scale
 function getTrafficColor(carCount: number): [number, number, number] {
-  if (carCount > 500) return [255, 0, 0]; // High traffic - Red
-  if (carCount > 100) return [255, 165, 0]; // Medium - Orange
-  return [0, 255, 0]; // Low - Green
+  return getValueColor(carCount, TRAFFIC_MIN, TRAFFIC_MAX) as [number, number, number];
+}
+
+// Air quality thresholds for sensor community (PM2.5)
+const PM25_MIN = 0;
+const PM25_MAX = 55;
+
+// Helper for air quality color scale (PM2.5 based)
+function getAirQualityColor(pm25: number): [number, number, number, number] {
+  return getValueColor(pm25, PM25_MIN, PM25_MAX, 220) as [number, number, number, number];
+}
+
+// Extract PM2.5 value from sensor community data
+function getPM25Value(sensordatavalues: Array<{ value_type: string; value: string }> | undefined): number {
+  if (!sensordatavalues) return 0;
+  const pm25 = sensordatavalues.find(v => v.value_type === 'P2') || sensordatavalues.find(v => v.value_type === 'P0');
+  return pm25 ? parseFloat(pm25.value) : 0;
 }
 
 export const LAYER_STYLES: Record<string, LayerStyleConfig> = {
@@ -86,22 +190,41 @@ export const LAYER_STYLES: Record<string, LayerStyleConfig> = {
       return getTrafficColor(count);
     },
     getLineWidth: () => 20,
+    legend: createGradientLegend('Traffic Density (Cars/Hour)', TRAFFIC_MIN, TRAFFIC_MAX, 4)
+  },
+  openSky: {
+    useIconLayer: true,
+    iconEmoji: '🛩️',
+    iconSize: 35,
+    iconColor: [255, 255, 255],
     legend: {
-      title: 'Traffic Density (Cars/Hour)',
-      items: [
-        { color: '#00FF00', label: 'Low (< 100)' },
-        { color: '#FFA500', label: 'Medium (100-500)' },
-        { color: '#FF0000', label: 'High (> 500)' }
-      ]
+      title: 'OpenSky',
+      items: [{ color: '#808080', label: '🛩️ Aircraft' }]
     }
   },
+
+  // Backend Components
+  sensorCommunity: {
+    getFillColor: (d: { properties?: { sensordatavalues?: Array<{ value_type: string; value: string }> } }) => {
+      const pm25 = getPM25Value(d.properties?.sensordatavalues);
+      return getAirQualityColor(pm25);
+    },
+    getRadius: 20, // Radius in meters
+    pointRadiusMinPixels: 5,
+    pointRadiusMaxPixels: 15,
+    getLineWidth: 1,
+    getLineColor: [255, 255, 255],
+    legend: createGradientLegend('Air Quality (PM2.5 µg/m³)', PM25_MIN, PM25_MAX, 4)
+  },
+
   // Fallback for others
   default: {
-    pointType: 'circle',
-    getFillColor: () => [128, 128, 128, 200],
-    getPointRadius: () => 8,
-    getLineWidth: () => 2,
-    getLineColor: () => [255, 255, 255],
+    getFillColor: [128, 128, 128, 200],
+    getRadius: 100,
+    pointRadiusMinPixels: 4,
+    pointRadiusMaxPixels: 10,
+    getLineWidth: 2,
+    getLineColor: [255, 255, 255],
     legend: {
       title: 'Data',
       items: [{ color: '#808080', label: 'Point' }]

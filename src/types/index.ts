@@ -29,6 +29,11 @@ export interface ResourceRecord {
   owner_id: number | null;
   filename: string;
   is_public: boolean;
+  // Tileset-specific fields (from new TilesetManager)
+  tileset_url?: string;
+  files_base_url?: string;
+  root_file?: string;
+  file_count?: number;
 }
 
 // ============================================================================

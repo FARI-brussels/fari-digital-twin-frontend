@@ -1,12 +1,16 @@
 <script setup lang="ts">
 /**
  * UploadAsset - Upload form for 3D assets (glTF, glb, etc.)
- * Requires authentication to upload
+ * Designed to be used inside a Dialog
  */
 import { ref, computed } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { useUploadAssetMutation } from '@/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import LoginPrompt from '@/components/LoginPrompt.vue';
 import { Upload, FileUp, X, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 
@@ -31,6 +35,7 @@ const { isAuthenticated, canWrite } = useAuth();
 
 const file = ref<File | null>(null);
 const description = ref('');
+const source = ref('');
 const successMessage = ref('');
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
@@ -88,13 +93,14 @@ function clearFile(): void {
 }
 
 async function uploadAsset(): Promise<void> {
-  if (!file.value || !description.value || !canWrite.value) {
+  if (!file.value || !description.value || !source.value || !canWrite.value) {
     return;
   }
 
   const formData = new FormData();
   formData.append('file', file.value);
   formData.append('description', description.value);
+  formData.append('source', source.value);
 
   successMessage.value = '';
 
@@ -102,8 +108,7 @@ async function uploadAsset(): Promise<void> {
     await uploadMutation.mutateAsync(formData);
     successMessage.value = 'Asset uploaded successfully!';
     description.value = '';
-
-    // Reset file input
+    source.value = '';
     clearFile();
 
     setTimeout(() => {
@@ -120,7 +125,7 @@ function handleCancel(): void {
 </script>
 
 <template>
-  <div class="w-full max-w-2xl mx-auto p-6">
+  <div class="w-full">
     <!-- Auth check -->
     <LoginPrompt
       v-if="!isAuthenticated"
@@ -130,30 +135,29 @@ function handleCancel(): void {
     />
 
     <!-- Upload form (authenticated) -->
-    <div v-else class="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+    <div v-else>
       <!-- Header -->
-      <div class="px-6 py-4 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-border">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Upload class="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h2 class="text-lg font-semibold text-foreground">Upload New Asset</h2>
-            <p class="text-sm text-muted-foreground">Add a 3D model to your library</p>
-          </div>
+      <div class="flex items-center gap-3 mb-2">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+          <Upload class="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold text-foreground">Upload New Asset</h2>
+          <p class="text-sm text-muted-foreground">Add a 3D model to your library</p>
         </div>
       </div>
 
-      <!-- Form -->
-      <form class="p-6 space-y-6" @submit.prevent="uploadAsset">
+      <Separator class="my-4" />
+
+      <form class="space-y-5" @submit.prevent="uploadAsset">
         <!-- Drag & Drop Zone -->
         <div
-          class="relative border-2 border-dashed rounded-lg transition-all duration-200"
+          class="relative rounded-lg border-2 border-dashed transition-colors"
           :class="[
             isDragging
               ? 'border-primary bg-primary/5'
               : file
-                ? 'border-accent bg-accent/5'
+                ? 'border-secondary bg-secondary/5'
                 : 'border-border hover:border-primary/50 hover:bg-muted/50',
           ]"
           @drop.prevent="handleDrop"
@@ -164,14 +168,14 @@ function handleCancel(): void {
             ref="fileInputRef"
             type="file"
             accept=".glb,.gltf,.obj,.fbx"
-            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             @change="handleFileChange"
           />
 
-          <div class="p-8 text-center">
+          <div class="p-6 text-center">
             <template v-if="file">
               <div class="flex items-center justify-center gap-3">
-                <FileUp class="w-8 h-8 text-accent" />
+                <FileUp class="h-8 w-8 text-secondary" />
                 <div class="text-left">
                   <p class="font-medium text-foreground">{{ file.name }}</p>
                   <p class="text-sm text-muted-foreground">
@@ -181,17 +185,17 @@ function handleCancel(): void {
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   class="ml-auto text-muted-foreground hover:text-destructive"
                   @click.stop="clearFile"
                 >
-                  <X class="w-4 h-4" />
+                  <X class="h-4 w-4" />
                 </Button>
               </div>
             </template>
             <template v-else>
-              <FileUp class="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p class="text-foreground font-medium mb-1">
+              <FileUp class="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+              <p class="mb-1 font-medium text-foreground">
                 Drop your file here or click to browse
               </p>
               <p class="text-sm text-muted-foreground">
@@ -203,47 +207,64 @@ function handleCancel(): void {
 
         <!-- Description -->
         <div class="space-y-2">
-          <label for="description" class="block text-sm font-medium text-foreground">
-            Description
-          </label>
-          <textarea
+          <Label for="description">
+            Description <span class="text-destructive">*</span>
+          </Label>
+          <Textarea
             id="description"
             v-model="description"
-            rows="3"
-            required
             placeholder="Describe your asset..."
-            class="w-full px-4 py-3 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-          ></textarea>
+            required
+          />
         </div>
 
-        <!-- Messages -->
+        <!-- Source URL -->
+        <div class="space-y-2">
+          <Label for="source">
+            Source URL <span class="text-destructive">*</span>
+          </Label>
+          <Input
+            id="source"
+            v-model="source"
+            type="url"
+            placeholder="https://example.com/original-asset"
+            required
+          />
+          <p class="text-xs text-muted-foreground">
+            Link to the original source or documentation of this asset
+          </p>
+        </div>
+
+        <!-- Error Message -->
         <div
           v-if="error"
-          class="flex items-center gap-2 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive"
+          class="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-destructive"
         >
-          <AlertCircle class="w-5 h-5 flex-shrink-0" />
+          <AlertCircle class="h-5 w-5 flex-shrink-0" />
           <span class="text-sm">{{ error }}</span>
         </div>
 
+        <!-- Success Message -->
         <div
           v-if="successMessage"
-          class="flex items-center gap-2 px-4 py-3 bg-accent/10 border border-accent/20 rounded-lg text-accent"
+          class="flex items-center gap-2 rounded-lg border border-secondary/20 bg-secondary/10 px-4 py-3 text-secondary-foreground"
         >
-          <CheckCircle2 class="w-5 h-5 flex-shrink-0" />
+          <CheckCircle2 class="h-5 w-5 flex-shrink-0 text-secondary" />
           <span class="text-sm">{{ successMessage }}</span>
         </div>
 
+        <Separator />
+
         <!-- Actions -->
-        <div class="flex justify-end gap-3 pt-2">
+        <div class="flex justify-end gap-3">
           <Button type="button" variant="outline" @click="handleCancel">
             Cancel
           </Button>
           <Button
             type="submit"
-            :disabled="!file || !description || uploading"
-            class="bg-primary hover:bg-primary/90"
+            :disabled="!file || !description || !source || uploading"
           >
-            <Upload class="w-4 h-4 mr-2" />
+            <Upload class="mr-2 h-4 w-4" />
             {{ uploading ? 'Uploading...' : 'Upload Asset' }}
           </Button>
         </div>

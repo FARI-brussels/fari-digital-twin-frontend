@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { useAuth } from '@/composables/useAuth';
 
 // ============================================================================
 // Props Definition
@@ -12,6 +13,12 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// ============================================================================
+// Auth
+// ============================================================================
+
+const { getToken } = useAuth();
 
 // ============================================================================
 // State
@@ -115,7 +122,16 @@ async function loadTileset(url: string): Promise<void> {
       viewer.scene.primitives.remove(currentTileset);
     }
 
-    const tileset = await Cesium.Cesium3DTileset.fromUrl(url);
+    // Get auth token if available (non-blocking)
+    const token = await getToken();
+
+    // Create Resource with auth headers if token is available
+    const resource = new Cesium.Resource({
+      url,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+
+    const tileset = await Cesium.Cesium3DTileset.fromUrl(resource);
     currentTileset = viewer.scene.primitives.add(tileset) as Cesium.Cesium3DTileset;
 
     await viewer.zoomTo(tileset);
@@ -133,8 +149,10 @@ async function loadTileset(url: string): Promise<void> {
 
 watch(
   () => props.tilesetUrl,
-  (newUrl: string) => {
-    void loadTileset(newUrl);
+  (newUrl: string, oldUrl: string | undefined) => {
+    if (newUrl && newUrl !== oldUrl) {
+      void loadTileset(newUrl);
+    }
   },
   { immediate: true }
 );

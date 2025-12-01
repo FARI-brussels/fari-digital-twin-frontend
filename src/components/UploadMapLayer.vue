@@ -7,8 +7,12 @@ import { ref, computed } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { useAddMapLayerMutation } from '@/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import LoginPrompt from '@/components/LoginPrompt.vue';
-import { Layers, Plus, AlertCircle, CheckCircle2, Globe, Type, FileText } from 'lucide-vue-next';
+import { Layers, Plus, AlertCircle, CheckCircle2 } from 'lucide-vue-next';
 
 // ============================================================================
 // Emits
@@ -83,7 +87,7 @@ function handleCancel(): void {
 </script>
 
 <template>
-  <div class="w-full max-w-2xl mx-auto p-6">
+  <div class="w-full">
     <!-- Auth check -->
     <LoginPrompt
       v-if="!isAuthenticated"
@@ -93,35 +97,32 @@ function handleCancel(): void {
     />
 
     <!-- Add layer form (authenticated) -->
-    <div v-else class="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+    <div v-else>
       <!-- Header -->
-      <div class="px-6 py-4 bg-gradient-to-r from-secondary/10 to-accent/10 border-b border-border">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
-            <Layers class="w-5 h-5 text-secondary" />
-          </div>
-          <div>
-            <h2 class="text-lg font-semibold text-foreground">Add New Map Layer</h2>
-            <p class="text-sm text-muted-foreground">Connect a WMS service to display geospatial data</p>
-          </div>
+      <div class="flex items-center gap-3 mb-2">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
+          <Layers class="h-5 w-5 text-secondary" />
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold text-foreground">Add New Map Layer</h2>
+          <p class="text-sm text-muted-foreground">Connect a WMS service to display geospatial data</p>
         </div>
       </div>
 
-      <!-- Form -->
-      <form class="p-6 space-y-5" @submit.prevent="addLayer">
+      <Separator class="my-4" />
+
+      <form class="space-y-5" @submit.prevent="addLayer">
         <!-- WMS URL -->
         <div class="space-y-2">
-          <label for="url" class="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Globe class="w-4 h-4 text-muted-foreground" />
-            WMS Provider URL
-          </label>
-          <input
-            id="url"
+          <Label for="wms-url">
+            WMS Provider URL <span class="text-destructive">*</span>
+          </Label>
+          <Input
+            id="wms-url"
             v-model="url"
             type="url"
             placeholder="https://example.com/wms"
             required
-            class="w-full px-4 py-3 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary transition-colors"
           />
           <p class="text-xs text-muted-foreground">
             The base URL of the WMS service (without query parameters)
@@ -130,17 +131,15 @@ function handleCancel(): void {
 
         <!-- Layer Name -->
         <div class="space-y-2">
-          <label for="layer" class="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Type class="w-4 h-4 text-muted-foreground" />
-            Layer Name/ID
-          </label>
-          <input
-            id="layer"
+          <Label for="layer-name">
+            Layer Name/ID <span class="text-destructive">*</span>
+          </Label>
+          <Input
+            id="layer-name"
             v-model="layer"
             type="text"
             placeholder="layer_name"
             required
-            class="w-full px-4 py-3 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary transition-colors"
           />
           <p class="text-xs text-muted-foreground">
             The exact layer name as defined in the WMS GetCapabilities
@@ -149,48 +148,47 @@ function handleCancel(): void {
 
         <!-- Description -->
         <div class="space-y-2">
-          <label for="description" class="flex items-center gap-2 text-sm font-medium text-foreground">
-            <FileText class="w-4 h-4 text-muted-foreground" />
-            Description
-          </label>
-          <textarea
-            id="description"
+          <Label for="layer-description">
+            Description <span class="text-destructive">*</span>
+          </Label>
+          <Textarea
+            id="layer-description"
             v-model="description"
-            rows="3"
-            required
             placeholder="Describe this map layer..."
-            class="w-full px-4 py-3 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary transition-colors resize-none"
-          ></textarea>
+            required
+          />
         </div>
 
-        <!-- Messages -->
+        <!-- Error Message -->
         <div
           v-if="error"
-          class="flex items-center gap-2 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive"
+          class="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-destructive"
         >
-          <AlertCircle class="w-5 h-5 flex-shrink-0" />
+          <AlertCircle class="h-5 w-5 flex-shrink-0" />
           <span class="text-sm">{{ error }}</span>
         </div>
 
+        <!-- Success Message -->
         <div
           v-if="successMessage"
-          class="flex items-center gap-2 px-4 py-3 bg-accent/10 border border-accent/20 rounded-lg text-accent"
+          class="flex items-center gap-2 rounded-lg border border-secondary/20 bg-secondary/10 px-4 py-3 text-secondary-foreground"
         >
-          <CheckCircle2 class="w-5 h-5 flex-shrink-0" />
+          <CheckCircle2 class="h-5 w-5 flex-shrink-0 text-secondary" />
           <span class="text-sm">{{ successMessage }}</span>
         </div>
 
+        <Separator />
+
         <!-- Actions -->
-        <div class="flex justify-end gap-3 pt-2">
+        <div class="flex justify-end gap-3">
           <Button type="button" variant="outline" @click="handleCancel">
             Cancel
           </Button>
           <Button
             type="submit"
             :disabled="!url || !layer || !description || submitting"
-            class="bg-secondary hover:bg-secondary/90"
           >
-            <Plus class="w-4 h-4 mr-2" />
+            <Plus class="mr-2 h-4 w-4" />
             {{ submitting ? 'Adding...' : 'Add Layer' }}
           </Button>
         </div>

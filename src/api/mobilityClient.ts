@@ -1,17 +1,14 @@
 /**
- * Mobility Twin API Client - Ky instance for external mobility data
+ * Mobility Twin API Client - Ky instance for external realtime GeoJSON data
  *
- * Uses the ULB Mobility Twin API for realtime vehicle positions
+ * Uses the ULB Mobility Twin API for realtime data sources
  * (STIB, SNCB, Bolt, Dott, Telraam, etc.)
  */
 import ky from 'ky';
+import type { GeoJSONFeatureCollection } from '@/types';
 
 /**
  * Mobility Twin API Endpoints Configuration
- *
- * The reason to use mobility twin here is because the harvester that computes
- * the vehicle position from the different STIB endpoints is not in the TS backend.
- * We could implement it in the TS backend later - to be discussed.
  */
 export const MobilityEndpoints = {
   stib: '/stib/vehicle-position',
@@ -19,9 +16,6 @@ export const MobilityEndpoints = {
   bolt: '/bolt/vehicle-position',
   dott: '/dott/vehicle-position',
   telraam: '/traffic/telraam',
-  tunnels: '/traffic/tunnels',
-  tunnelDevices: '/traffic/tunnel-devices',
-  airQuality: '/environment/air-quality',
 } as const;
 
 export type MobilitySource = keyof typeof MobilityEndpoints;
@@ -29,7 +23,7 @@ export type MobilitySource = keyof typeof MobilityEndpoints;
 /**
  * Ky client for Mobility Twin API
  */
-export const mobilityTwinClient = ky.create({
+const mobilityTwinClient = ky.create({
   prefixUrl: 'https://api.mobilitytwin.brussels',
   timeout: 30000,
   headers: {
@@ -39,21 +33,38 @@ export const mobilityTwinClient = ky.create({
 });
 
 /**
- * Generic function to fetch data from Mobility Twin API
+ * Mobility Twin API response wrapper
+ * The API wraps GeoJSON in metadata - we normalize this internally
  */
-export async function fetchMobilityData<T = unknown>(
+interface MobilityApiResponse {
+  status_code: number;
+  message: string;
+  type: string;
+  features: GeoJSONFeatureCollection['features'];
+}
+
+/**
+ * Fetch GeoJSON data from Mobility Twin API
+ * Returns normalized GeoJSONFeatureCollection (handles API wrapper internally)
+ */
+export async function fetchMobilityData(
   source: MobilitySource,
-  params?: Record<string, string | number | boolean>
-): Promise<T> {
+  params?: Record<string, string>
+): Promise<GeoJSONFeatureCollection> {
   const endpoint = MobilityEndpoints[source];
-  // Remove leading slash for Ky prefixUrl compatibility
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
 
-  const searchParams = params
-    ? new URLSearchParams(
-        Object.entries(params).map(([k, v]) => [k, String(v)])
-      )
-    : undefined;
+  const response = await mobilityTwinClient
+    .get(cleanEndpoint, { searchParams: params })
+    .json<MobilityApiResponse | GeoJSONFeatureCollection>();
 
-  return mobilityTwinClient.get(cleanEndpoint, { searchParams }).json<T>();
+  // Normalize: API wraps GeoJSON in metadata, we return clean GeoJSON
+  if ('status_code' in response) {
+    return {
+      type: 'FeatureCollection',
+      features: response.features,
+    };
+  }
+
+  return response;
 }

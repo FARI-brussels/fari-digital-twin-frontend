@@ -170,8 +170,8 @@ function getLayerClasses(layer: ExampleLayer): string {
             </span>
           </div>
           <button
-            @click="openExample(example)"
             class="w-full py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition"
+            @click="openExample(example)"
           >
             View Example
           </button>

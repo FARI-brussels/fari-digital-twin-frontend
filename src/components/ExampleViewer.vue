@@ -55,19 +55,26 @@ onMounted(async () => {
     if (cesiumToken) {
       Cesium.Ion.defaultAccessToken = cesiumToken;
     }
-    viewer = new Cesium.Viewer(cesiumContainer.value, {
-      terrain: Cesium.Terrain.fromWorldTerrain(),
+
+    // Only use Ion terrain if token is available
+    const viewerOptions: Cesium.Viewer.ConstructorOptions = {
       animation: false,
       baseLayerPicker: false,
       fullscreenButton: true,
-      geocoder: true,
+      geocoder: !!cesiumToken, // Geocoder requires Ion token
       homeButton: false,
       infoBox: true,
       sceneModePicker: false,
       selectionIndicator: true,
       timeline: false,
       navigationHelpButton: false,
-    });
+    };
+
+    if (cesiumToken) {
+      viewerOptions.terrain = Cesium.Terrain.fromWorldTerrain();
+    }
+
+    viewer = new Cesium.Viewer(cesiumContainer.value, viewerOptions);
 
     // Add base layer if included
     const baseMapLayer = props.example.layers.find(
@@ -190,7 +197,7 @@ onBeforeUnmount(() => {
       >
         &times;
       </button>
-      <div class="w-full h-full" ref="cesiumContainer"></div>
+      <div ref="cesiumContainer" class="w-full h-full"></div>
       <div
         v-if="loading"
         class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/80 px-4 py-2 rounded z-[1005]"

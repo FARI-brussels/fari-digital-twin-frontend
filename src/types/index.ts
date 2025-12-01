@@ -15,6 +15,23 @@ export interface ApiResponse<T> {
 }
 
 // ============================================================================
+// Backend Resource Record (shared structure for assets, tilesets, etc.)
+// ============================================================================
+
+export interface ResourceRecord {
+  id: number;
+  name: string;
+  type: string;
+  url: string;
+  date: string;
+  description: string;
+  source: string;
+  owner_id: number | null;
+  filename: string;
+  is_public: boolean;
+}
+
+// ============================================================================
 // Asset Types
 // ============================================================================
 

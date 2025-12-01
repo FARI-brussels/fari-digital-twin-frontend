@@ -57,8 +57,12 @@ function initializeViewer(): void {
       })
     );
 
-    // Set terrain using the scene method
-    viewer.scene.setTerrain(new Cesium.Terrain(Cesium.CesiumTerrainProvider.fromIonAssetId(3340034)));
+    // Set terrain only if Ion token is available
+    if (cesiumToken) {
+      viewer.scene.setTerrain(
+        new Cesium.Terrain(Cesium.CesiumTerrainProvider.fromIonAssetId(3340034))
+      );
+    }
 
     // Add WMS layer by default
     addWmsLayer();
@@ -160,8 +164,8 @@ onBeforeUnmount(() => {
     <div class="absolute top-2.5 right-2.5 z-[100] bg-black/80 p-2.5 rounded">
       <label class="flex items-center text-white text-sm cursor-pointer select-none">
         <input
-          type="checkbox"
           v-model="showWmsLayer"
+          type="checkbox"
           class="mr-2 cursor-pointer"
           @change="toggleWmsLayer"
         />

@@ -11,6 +11,15 @@ const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL;
 const keycloakRealm = import.meta.env.VITE_KEYCLOAK_REALM;
 const keycloakClientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID;
 
+// Validate required environment variables
+if (!keycloakUrl || !keycloakRealm || !keycloakClientId) {
+  console.error('[vue-keycloak]: Missing required environment variables:', {
+    keycloakUrl: !!keycloakUrl,
+    keycloakRealm: !!keycloakRealm,
+    keycloakClientId: !!keycloakClientId
+  });
+}
+
 // Redirect URIs
 const publicOrigin = window.location.origin;
 
@@ -45,6 +54,9 @@ app
       flow: 'standard',
       checkLoginIframe: false,
       silentCheckSsoRedirectUri,
+      checkLoginIframeInterval: 5,
+      enableLogging: true,
+      messageReceiveTimeout: 10000,
     },
   });
 

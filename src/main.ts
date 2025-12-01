@@ -43,10 +43,13 @@ app
     initOptions: {
       onLoad: 'check-sso',
       flow: 'standard',
+      responseMode: 'fragment',
+      pkceMethod: 'S256',
       checkLoginIframe: false,
       checkLoginIframeInterval: 5,
       enableLogging: true,
       messageReceiveTimeout: 10000,
+      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
     },
   });
 

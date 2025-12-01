@@ -46,8 +46,8 @@ const assets = computed<AssetItem[]>(() => {
 // ============================================================================
 
 async function handleDelete(item: LibraryItem): Promise<void> {
-  if (!item.url) throw new Error('Asset has no URL');
-  await deleteAssetMutation.mutateAsync(item.url);
+  if (item.id === undefined || item.id === null) throw new Error('Asset has no ID');
+  await deleteAssetMutation.mutateAsync(Number(item.id));
 }
 
 function handleUploaded(): void {
@@ -112,10 +112,10 @@ const codeSnippets = {
     <template #list-item="{ items, selectedItem, selectItem, deleteItem, canDelete }">
       <li
         v-for="item in items"
-        :key="item.url"
+        :key="item.id"
         class="group flex items-center gap-3 px-4 py-3 border-b border-border cursor-pointer transition-colors"
         :class="[
-          selectedItem && selectedItem.url === item.url
+          selectedItem && selectedItem.id === item.id
             ? 'bg-primary/10 border-l-2 border-l-primary'
             : 'hover:bg-muted/50',
         ]"
@@ -125,7 +125,7 @@ const codeSnippets = {
         <div
           class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
           :class="[
-            selectedItem && selectedItem.url === item.url
+            selectedItem && selectedItem.id === item.id
               ? 'bg-primary/20'
               : 'bg-muted',
           ]"
@@ -133,7 +133,7 @@ const codeSnippets = {
           <Box
             class="w-5 h-5"
             :class="[
-              selectedItem && selectedItem.url === item.url
+              selectedItem && selectedItem.id === item.id
                 ? 'text-primary'
                 : 'text-muted-foreground',
             ]"

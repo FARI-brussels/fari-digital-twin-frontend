@@ -2,11 +2,12 @@
  * Asset Queries and Mutations
  * Aligned with backend AssetsManager endpoints (api/assets)
  */
-import { useQuery, useQueryClient } from '@tanstack/vue-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/vue-query';
 import { apiClient } from '../client';
 import { queryKeys } from '../queryKeys';
 import { createMutation } from '../utils/mutationFactory';
 import { CACHE_CONFIG } from '../utils/cacheConfig';
+import { buildAssetUrl } from '../utils/urlBuilder';
 import type { Asset, ResourceRecord } from '@/types';
 
 // ============================================================================
@@ -25,7 +26,7 @@ async function fetchAssets(): Promise<Asset[]> {
 
   return records.map(record => ({
     id: record.id,
-    url: record.url,
+    url: buildAssetUrl(record.url),
     name: record.filename || record.name,
     description: record.description,
     type: record.type,
@@ -77,29 +78,17 @@ export const useDeleteAssetByIdMutation = createMutation(
 );
 
 /**
- * Delete asset by URL - uses QueryClient cache to avoid extra API call
+ * Delete asset by ID
  */
 export function useDeleteAssetMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation(
-    async (url: string) => {
-      // Try to find ID from cache first
-      const cached = queryClient.getQueryData<Asset[]>(queryKeys.assets.list());
-      let assetId = cached?.find(a => a.url === url)?.id;
-
-      // If not in cache, fetch to find ID
-      if (!assetId) {
-        const records = await apiClient.get('api/assets').json<ResourceRecord[]>();
-        const asset = records.find(r => r.url === url);
-        if (!asset) {
-          throw new Error(`Asset not found with URL: ${url}`);
-        }
-        assetId = asset.id;
-      }
-
-      await deleteAssetById(assetId);
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await deleteAssetById(id);
     },
-    [queryKeys.assets.all]
-  )();
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.assets.all });
+    },
+  });
 }

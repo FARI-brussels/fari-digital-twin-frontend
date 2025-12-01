@@ -46,10 +46,8 @@ app
       responseMode: 'fragment',
       pkceMethod: 'S256',
       checkLoginIframe: false,
-      checkLoginIframeInterval: 5,
-      enableLogging: true,
+      enableLogging: false, // Disable verbose Keycloak logging
       messageReceiveTimeout: 10000,
-      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
     },
   });
 

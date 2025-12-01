@@ -7,6 +7,7 @@ import { apiClient } from '../client';
 import { queryKeys } from '../queryKeys';
 import { createMutation } from '../utils/mutationFactory';
 import { CACHE_CONFIG } from '../utils/cacheConfig';
+import { buildAssetUrl } from '../utils/urlBuilder';
 import type { Tileset, ResourceRecord } from '@/types';
 
 // ============================================================================
@@ -25,7 +26,8 @@ async function fetchTilesets(): Promise<Tileset[]> {
 
   return records.map(record => ({
     id: record.id,
-    url: record.url,
+    // New backend returns tileset_url for the JSON file path
+    url: buildAssetUrl(record.tileset_url || record.url),
     name: record.filename || record.name,
     description: record.description,
     date: record.date,

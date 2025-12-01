@@ -42,18 +42,22 @@ function handleLogout(): void {
 </script>
 
 <template>
-  <div class="flex flex-row w-full items-center justify-between py-4 px-6 text-white bg-blue-700">
-    <RouterLink to="/">
+  <header class="flex w-full items-center justify-between py-4 px-6 bg-primary text-primary-foreground">
+    <RouterLink to="/" class="flex items-center">
       <FariLogo />
     </RouterLink>
-    <div class="flex items-center gap-3">
-      <Button variant="ghost" as-child class="text-white hover:bg-white/10 hover:text-white">
-        <RouterLink to="/doc"> API doc </RouterLink>
+
+    <nav class="flex items-center gap-3">
+      <!-- API Doc link -->
+      <Button variant="ghost" as-child class="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
+        <RouterLink to="/doc">API doc</RouterLink>
       </Button>
+
+      <!-- Not authenticated -->
       <template v-if="!isAuthenticated">
         <Button
           variant="ghost"
-          class="text-white hover:bg-white/10 hover:text-white"
+          class="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
           :disabled="isPending"
           @click="handleRegister"
         >
@@ -61,7 +65,6 @@ function handleLogout(): void {
         </Button>
         <Button
           variant="secondary"
-          class="bg-white text-blue-800 hover:bg-gray-100"
           :disabled="isPending"
           @click="handleLogin"
         >
@@ -69,18 +72,20 @@ function handleLogout(): void {
           <span v-else>Sign in</span>
         </Button>
       </template>
+
+      <!-- Authenticated -->
       <template v-else>
-        <span class="text-white text-sm font-medium">
-          Username : {{ displayName || 'Authenticated' }}
+        <span class="text-sm font-medium">
+          {{ displayName || 'Authenticated' }}
         </span>
         <Button
           variant="ghost"
-          class="text-white hover:bg-white/10 hover:text-white"
+          class="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
           @click="handleLogout"
         >
           Sign out
         </Button>
       </template>
-    </div>
-  </div>
+    </nav>
+  </header>
 </template>

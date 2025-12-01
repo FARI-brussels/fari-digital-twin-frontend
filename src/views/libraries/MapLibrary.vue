@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { deleteMapLayer as apiDeleteMapLayer } from '@/lib/api';
+/**
+ * MapLibrary - Browse and manage WMS map layers
+ * Supports deleting individual layers or all layers from a provider
+ * Delete buttons only shown when authenticated
+ */
+import { computed, ref } from 'vue';
 import LibraryBase from '@/components/LibraryBase.vue';
 import MapViewer from '@/components/MapViewer.vue';
 import UploadMapLayer from '@/components/UploadMapLayer.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import { Button } from '@/components/ui/button';
+import { useMapLayersQuery, useDeleteMapLayerMutation, useDeleteAllLayersFromServerMutation } from '@/api';
 import type { MapLayer, LibraryItem, GroupedLayers } from '@/types';
+import { Trash2, Layers, ChevronDown, ChevronRight, Globe } from 'lucide-vue-next';
 
 // ============================================================================
 // Types
@@ -16,13 +25,41 @@ interface MapLayerItem extends LibraryItem {
 }
 
 // ============================================================================
+// Query & Mutations
+// ============================================================================
+
+const { data: rawMapLayers, isLoading, error, refetch } = useMapLayersQuery();
+const deleteMapLayerMutation = useDeleteMapLayerMutation();
+const deleteAllFromServerMutation = useDeleteAllLayersFromServerMutation();
+
+// ============================================================================
+// State
+// ============================================================================
+
+// Use Map for better reactivity (avoids forced Set recreation)
+const expandedProviders = ref<Map<string, boolean>>(new Map());
+const deletingProvider = ref<string | null>(null);
+
+// Delete all from provider confirmation state
+const showDeleteAllConfirm = ref(false);
+const providerToDelete = ref<string | null>(null);
+const isDeletingAll = ref(false);
+
+// ============================================================================
+// Computed
+// ============================================================================
+
+const mapLayers = computed<MapLayerItem[]>(() => {
+  if (!rawMapLayers.value) return [];
+  return rawMapLayers.value as MapLayerItem[];
+});
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
 function groupedLayers(layers: LibraryItem[]): GroupedLayers {
-  if (!Array.isArray(layers)) {
-    return {};
-  }
+  if (!Array.isArray(layers)) return {};
   return (layers as MapLayerItem[]).reduce<GroupedLayers>((acc, layer) => {
     const provider = layer.url;
     if (!acc[provider]) {
@@ -33,21 +70,70 @@ function groupedLayers(layers: LibraryItem[]): GroupedLayers {
   }, {});
 }
 
+function toggleProvider(provider: string | number): void {
+  const key = String(provider);
+  const current = expandedProviders.value.get(key) ?? false;
+  expandedProviders.value.set(key, !current);
+}
+
+function isProviderExpanded(provider: string | number): boolean {
+  return expandedProviders.value.get(String(provider)) ?? false;
+}
+
+function getProviderName(url: string | number): string {
+  const urlStr = String(url);
+  try {
+    const urlObj = new URL(urlStr);
+    return urlObj.hostname;
+  } catch {
+    return urlStr.substring(0, 30) + '...';
+  }
+}
+
 // ============================================================================
-// Delete Handler (Fixed bug: was missing deleteUrlBase parameter)
+// Handlers
 // ============================================================================
 
-async function deleteMapLayer(layer: LibraryItem): Promise<void> {
-  const mapLayer = layer as MapLayerItem;
+async function handleDelete(item: LibraryItem): Promise<void> {
+  const mapLayer = item as MapLayerItem;
+  await deleteMapLayerMutation.mutateAsync({
+    url: mapLayer.url,
+    layer: mapLayer.layer,
+  });
+}
+
+/** Opens confirmation dialog for deleting all layers from a provider */
+function requestDeleteAllFromProvider(provider: string | number): void {
+  providerToDelete.value = String(provider);
+  showDeleteAllConfirm.value = true;
+}
+
+/** Actually performs the delete all after confirmation */
+async function confirmDeleteAllFromProvider(): Promise<void> {
+  if (!providerToDelete.value) return;
+
+  isDeletingAll.value = true;
+  deletingProvider.value = providerToDelete.value;
+
   try {
-    await apiDeleteMapLayer('/maps-manager/delete', {
-      url: mapLayer.url,
-      layer: mapLayer.layer,
-    });
-  } catch (err) {
-    console.error('Error deleting map layer:', err);
-    throw err;
+    await deleteAllFromServerMutation.mutateAsync(providerToDelete.value);
+    void refetch();
+    showDeleteAllConfirm.value = false;
+    providerToDelete.value = null;
+  } finally {
+    isDeletingAll.value = false;
+    deletingProvider.value = null;
   }
+}
+
+/** Cancels the delete all operation */
+function cancelDeleteAll(): void {
+  showDeleteAllConfirm.value = false;
+  providerToDelete.value = null;
+}
+
+function handleUploaded(): void {
+  void refetch();
 }
 
 // ============================================================================
@@ -98,36 +184,121 @@ const codeSnippets = {
   <LibraryBase
     title="Map Layer Library"
     itemType="map"
-    fetchUrl="/maps-manager/all"
     :viewerComponent="MapViewer"
     :uploadComponent="UploadMapLayer"
     :codeSnippets="codeSnippets"
-    :deleteItem="deleteMapLayer"
+    :items="mapLayers"
+    :isLoading="isLoading"
+    :error="error"
+    :onDelete="handleDelete"
+    @uploaded="handleUploaded"
   >
-    <template #list-item="{ items, selectedItem, selectItem, deleteItem }">
-      <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="mb-5">
-        <h2 class="text-lg font-bold bg-gray-100 px-4 py-2 border-b">{{ provider }}</h2>
-        <ul>
+    <template #list-item="{ items, selectedItem, selectItem, deleteItem, canDelete }">
+      <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="border-b border-border">
+        <!-- Provider Header -->
+        <div
+          class="flex items-center gap-2 px-4 py-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+          @click="toggleProvider(provider)"
+        >
+          <!-- Expand/Collapse Icon -->
+          <ChevronDown
+            v-if="isProviderExpanded(provider)"
+            class="w-4 h-4 text-muted-foreground flex-shrink-0"
+          />
+          <ChevronRight
+            v-else
+            class="w-4 h-4 text-muted-foreground flex-shrink-0"
+          />
+
+          <!-- Provider Icon -->
+          <div class="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center flex-shrink-0">
+            <Globe class="w-4 h-4 text-secondary" />
+          </div>
+
+          <!-- Provider Info -->
+          <div class="flex-1 min-w-0">
+            <p class="font-medium text-foreground truncate">{{ getProviderName(provider) }}</p>
+            <p class="text-xs text-muted-foreground">{{ layers.length }} layer{{ layers.length > 1 ? 's' : '' }}</p>
+          </div>
+
+          <!-- Delete All Button (only when authenticated) -->
+          <Button
+            v-if="canDelete"
+            variant="ghost"
+            size="sm"
+            class="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            :disabled="deletingProvider === String(provider)"
+            @click.stop="requestDeleteAllFromProvider(provider)"
+          >
+            <Trash2 class="w-4 h-4 mr-1" />
+            {{ deletingProvider === String(provider) ? 'Deleting...' : 'Delete all' }}
+          </Button>
+        </div>
+
+        <!-- Layers List (collapsible) -->
+        <ul v-if="isProviderExpanded(provider)" class="bg-background">
           <li
             v-for="layer in layers"
-            :key="layer.layer"
-            class="flex justify-between items-center px-4 py-2 border-b cursor-pointer hover:bg-gray-100"
-            :class="{
-              'bg-blue-50':
-                selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url,
-            }"
+            :key="`${layer.url}-${layer.layer}`"
+            class="group flex items-center gap-3 px-4 py-3 pl-12 border-b border-border/50 cursor-pointer transition-colors"
+            :class="[
+              selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url
+                ? 'bg-secondary/10 border-l-2 border-l-secondary'
+                : 'hover:bg-muted/30',
+            ]"
             @click="selectItem(layer)"
           >
-            <div class="font-bold">{{ layer.description }}</div>
-            <button
-              @click.stop="deleteItem(layer)"
-              class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+            <!-- Layer Icon -->
+            <div
+              class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              :class="[
+                selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url
+                  ? 'bg-secondary/20'
+                  : 'bg-muted',
+              ]"
             >
-              Delete
-            </button>
+              <Layers
+                class="w-4 h-4"
+                :class="[
+                  selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url
+                    ? 'text-secondary'
+                    : 'text-muted-foreground',
+                ]"
+              />
+            </div>
+
+            <!-- Layer Info -->
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-foreground truncate">{{ layer.description }}</p>
+              <p class="text-xs text-muted-foreground truncate">{{ layer.layer }}</p>
+            </div>
+
+            <!-- Delete Single Layer Button (only when authenticated) -->
+            <Button
+              v-if="canDelete"
+              variant="ghost"
+              size="sm"
+              class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+              @click.stop="deleteItem(layer)"
+            >
+              <Trash2 class="w-4 h-4" />
+            </Button>
           </li>
         </ul>
       </div>
     </template>
   </LibraryBase>
+
+  <!-- Delete All Layers Confirmation Dialog -->
+  <ConfirmDialog
+    v-model:open="showDeleteAllConfirm"
+    title="Delete All Layers"
+    :description="`Are you sure you want to delete ALL layers from '${providerToDelete ? getProviderName(providerToDelete) : ''}'? This action cannot be undone.`"
+    confirm-text="Delete All"
+    cancel-text="Cancel"
+    variant="danger"
+    :loading="isDeletingAll"
+    @confirm="confirmDeleteAllFromProvider"
+    @cancel="cancelDeleteAll"
+  />
 </template>

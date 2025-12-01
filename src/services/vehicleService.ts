@@ -1,5 +1,5 @@
-import type { AxiosInstance } from 'axios';
-import { apiClient } from '@/lib/api';
+import type { KyInstance } from 'ky';
+import { apiClient } from '@/api';
 import type { VehicleFeature, VehicleGeoJSONCollection } from '@/types/vehicle';
 
 /**
@@ -7,9 +7,9 @@ import type { VehicleFeature, VehicleGeoJSONCollection } from '@/types/vehicle';
  * Single Responsibility: Only handles API communication
  */
 export class VehicleService {
-  private apiClient: AxiosInstance;
+  private apiClient: KyInstance;
 
-  constructor(apiClient: AxiosInstance) {
+  constructor(apiClient: KyInstance) {
     this.apiClient = apiClient;
   }
 
@@ -18,26 +18,18 @@ export class VehicleService {
    * @returns {Promise<VehicleFeature[]>} Array of vehicle features in GeoJSON format
    */
   async fetchVehiclePositions(): Promise<VehicleFeature[]> {
-    const headers: Record<string, string> = {};
-    const twinToken = import.meta.env.VITE_TWIN_API_TOKEN;
-
-    if (twinToken) {
-      headers.Authorization = `Bearer ${twinToken}`;
-    }
-
-    const response = await this.apiClient.get<VehicleGeoJSONCollection | VehicleFeature[]>(
-      '/stib/vehicle-position',
-      { headers }
-    );
+    const data = await this.apiClient
+      .get('stib/vehicle-position')
+      .json<VehicleGeoJSONCollection | VehicleFeature[]>();
 
     let vehicleData: VehicleFeature[] = [];
 
-    if (Array.isArray(response.data)) {
+    if (Array.isArray(data)) {
       // Direct array of features
-      vehicleData = response.data;
-    } else if (response.data && 'features' in response.data) {
+      vehicleData = data;
+    } else if (data && 'features' in data) {
       // GeoJSON FeatureCollection
-      vehicleData = response.data.features || [];
+      vehicleData = data.features || [];
     }
 
     return vehicleData;

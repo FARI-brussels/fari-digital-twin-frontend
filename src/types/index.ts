@@ -92,7 +92,7 @@ export interface RealtimeDataset {
 }
 
 // ============================================================================
-// Vehicle Types (GeoJSON)
+// GeoJSON Types (Generic)
 // ============================================================================
 
 export interface GeoJSONPoint {
@@ -100,37 +100,18 @@ export interface GeoJSONPoint {
   coordinates: [number, number] | [number, number, number];
 }
 
-export interface VehicleProperties {
-  id?: number;
-  pointId?: number;
-  vehicleId?: string;
-  route_id?: string;
-  routeId?: string;
-  routeShortName?: string;
-  trip_id?: string;
-  tripId?: string;
-  [key: string]: unknown;
-}
-
-export interface VehicleFeature {
-  id?: string;
+export interface GeoJSONFeature<P = Record<string, unknown>> {
   type: 'Feature';
-  properties: VehicleProperties;
+  id?: string | number;
   geometry: GeoJSONPoint;
+  properties: P;
 }
 
-export interface VehicleGeoJSONCollection {
+export interface GeoJSONFeatureCollection<P = Record<string, unknown>> {
   type: 'FeatureCollection';
-  features: VehicleFeature[];
+  features: GeoJSONFeature<P>[];
 }
 
-export interface VehicleData {
-  id: string;
-  longitude: number;
-  latitude: number;
-  routeId?: string;
-  color: [number, number, number];
-}
 
 // ============================================================================
 // Demo/Example Types

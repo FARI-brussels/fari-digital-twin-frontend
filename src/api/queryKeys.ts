@@ -20,8 +20,8 @@ export const queryKeys = {
     list: () => [...queryKeys.tilesets.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.tilesets.all, 'detail', id] as const,
   },
-  vehicles: {
-    all: ['vehicles'] as const,
-    positions: (endpoint: string) => [...queryKeys.vehicles.all, 'positions', endpoint] as const,
+  components: {
+    all: ['components'] as const,
+    data: (source: string) => [...queryKeys.components.all, 'data', source] as const,
   },
 } as const;

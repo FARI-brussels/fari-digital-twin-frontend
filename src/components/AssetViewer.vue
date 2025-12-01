@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { useAuth } from '@/composables/useAuth';
 
 // ============================================================================
 // Props Definition
@@ -12,6 +13,12 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// ============================================================================
+// Auth
+// ============================================================================
+
+const { getToken } = useAuth();
 
 // ============================================================================
 // State
@@ -75,10 +82,19 @@ async function loadModel(url: string): Promise<void> {
       viewer.entities.remove(currentEntity);
     }
 
+    // Get auth token if available (non-blocking)
+    const token = await getToken();
+
+    // Create Resource with auth headers if token is available
+    const resource = new Cesium.Resource({
+      url,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+
     const entity = viewer.entities.add({
       position: defaultPosition,
       model: {
-        uri: url,
+        uri: resource,
         minimumPixelSize: 128,
         maximumScale: 20000,
       },

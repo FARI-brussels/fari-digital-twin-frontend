@@ -1,5 +1,5 @@
 import type { KyInstance } from 'ky';
-import { apiClient } from '@/api';
+import { mobilityTwinClient } from '@/api/client';
 import type { VehicleFeature, VehicleGeoJSONCollection } from '@/types/vehicle';
 
 /**
@@ -37,4 +37,4 @@ export class VehicleService {
 }
 
 // Default instance for convenience
-export const vehicleService = new VehicleService(apiClient);
+export const vehicleService = new VehicleService(mobilityTwinClient);

@@ -4,9 +4,8 @@
 import { useQuery } from '@tanstack/vue-query';
 import type { MaybeRefOrGetter } from 'vue';
 import { toValue } from 'vue';
-import { apiClient } from '../client';
-import { queryKeys } from '../queryKeys';
-import type { VehicleGeoJSONCollection, VehicleFeature } from '@/types';
+import { apiClient, queryKeys } from '@/api';
+import type { VehicleFeature, VehicleGeoJSONCollection } from '@/types';
 
 // ============================================================================
 // API Functions

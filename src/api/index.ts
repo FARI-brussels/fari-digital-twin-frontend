@@ -30,5 +30,12 @@ export {
   useDeleteTilesetMutation,
 } from './queries/tilesets';
 
-// Vehicles
-export { useVehiclePositionsQuery } from './queries/vehicles';
+// Realtime Data (Mobility Twin API)
+export { fetchMobilityData, MobilityEndpoints, type MobilitySource } from './mobilityClient';
+
+// Backend Components (Collectors, Harvesters, etc.)
+export {
+  useComponentQuery,
+  ComponentEndpoints,
+  type ComponentSource,
+} from './queries/components';

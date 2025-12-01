@@ -27,4 +27,10 @@ export const CACHE_CONFIG = {
     staleTime: 10 * 1000, // 10 seconds
     gcTime: 30 * 1000, // 30 seconds
   },
+
+  /** Backend components - moderate refresh, data typically updates periodically */
+  components: {
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  },
 } as const;

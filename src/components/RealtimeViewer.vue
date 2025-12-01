@@ -4,8 +4,10 @@ import { MapboxOverlay } from '@deck.gl/mapbox';
 import { GeoJsonLayer, IconLayer } from '@deck.gl/layers';
 import maplibregl, { type IControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { RealtimeDataset, VehicleGeoJSONCollection } from '@/types';
-import { fetchMobilityData, type MobilitySource } from '@/api/mobilityClient';
+import type { RealtimeDataset, GeoJSONFeatureCollection } from '@/types';
+import { fetchMobilityData, MobilityEndpoints, type MobilitySource } from '@/api/mobilityClient';
+import { apiClient } from '@/api';
+import { ComponentEndpoints, type ComponentSource } from '@/api/queries/components';
 import { getLayerStyle, type LayerStyleConfig } from '@/lib/layerStyles';
 
 const props = defineProps<{
@@ -18,12 +20,41 @@ let map: maplibregl.Map | null = null;
 let deckOverlay: MapboxOverlay | null = null;
 
 // Data state
-const geojsonData = ref<VehicleGeoJSONCollection | null>(null);
+const geojsonData = ref<GeoJSONFeatureCollection | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const pollInterval = ref<number | null>(null);
 const selectedInfo = ref<{ x: number; y: number; object: { properties: Record<string, unknown> } } | null>(null);
 const currentStyle = ref<LayerStyleConfig | null>(null);
+
+// Determine source type from dataset ID
+type SourceType = 'mobility' | 'component' | 'unknown';
+
+function getSourceType(id: string): SourceType {
+  if (id in MobilityEndpoints) return 'mobility';
+  if (id in ComponentEndpoints) return 'component';
+  return 'unknown';
+}
+
+/**
+ * Normalize GeoJSON coordinates to numbers
+ * Some APIs return coordinates as strings which DeckGL can't render
+ * THIS SHOULD BE DONE IN BACKEND
+ */
+function normalizeGeoJSON(data: GeoJSONFeatureCollection): GeoJSONFeatureCollection {
+  return {
+    ...data,
+    features: data.features.map(feature => ({
+      ...feature,
+      geometry: {
+        ...feature.geometry,
+        coordinates: feature.geometry.coordinates.map(coord =>
+          typeof coord === 'string' ? parseFloat(coord) : coord
+        ) as [number, number] | [number, number, number],
+      },
+    })),
+  };
+}
 
 // Create icon atlas from emoji/unicode characters dynamically
 const iconAtlas = computed(() => {
@@ -55,35 +86,26 @@ async function fetchData() {
   error.value = null;
   
   try {
-    // Map the dataset ID/name to the MobilitySource key
-    // Assuming the dataset.id corresponds to the keys in MobilityEndpoints (stib, sncb, etc.)
-    const source = props.dataset.id as MobilitySource;
+    const sourceId = props.dataset.id;
+    const sourceType = getSourceType(sourceId);
     
     // Update style configuration
-    currentStyle.value = getLayerStyle(source);
+    currentStyle.value = getLayerStyle(sourceId);
+    let response: GeoJSONFeatureCollection;
 
-    // API response wrapper type (Mobility Twin API wraps GeoJSON in metadata)
-    interface MobilityApiResponse {
-      status_code: number;
-      message: string;
-      type: string;
-      features: VehicleGeoJSONCollection['features'];
-    }
-
-    const response = await fetchMobilityData<MobilityApiResponse | VehicleGeoJSONCollection>(source);
-    
-    // Normalize response: API returns wrapper object with status_code, message, type, features
-    // DeckGL expects standard GeoJSON: { type: "FeatureCollection", features: [...] }
-    if ('status_code' in response) {
-      // Wrapped response from Mobility Twin API
-      geojsonData.value = {
-        type: 'FeatureCollection',
-        features: response.features,
-      };
+    if (sourceType === 'mobility') {
+      // Fetch from Mobility Twin API (returns normalized GeoJSON)
+      response = await fetchMobilityData(sourceId as MobilitySource);
+    } else if (sourceType === 'component') {
+      // Fetch from backend component
+      const endpoint = ComponentEndpoints[sourceId as ComponentSource];
+      response = await apiClient.get(endpoint).json<GeoJSONFeatureCollection>();
     } else {
-      // Already a standard GeoJSON
-      geojsonData.value = response;
+      throw new Error(`Unknown data source: ${sourceId}`);
     }
+
+    // Normalize coordinates (some APIs return strings instead of numbers)
+    geojsonData.value = normalizeGeoJSON(response);
   } catch (err) {
     console.error('Error fetching realtime data:', err);
     error.value = 'Failed to fetch realtime data';
@@ -132,14 +154,7 @@ function updateLayers() {
     );
   } else {
     // Use GeoJsonLayer for circles and lines
-    const styleProps = currentStyle.value || {
-      pointType: 'circle',
-      getFillColor: [255, 0, 0, 200],
-      getLineColor: [255, 255, 255],
-      getPointRadius: 10,
-      getLineWidth: 2,
-    };
-
+    const styleProps = currentStyle.value;
     layers.push(
       new GeoJsonLayer({
         id: 'realtime-geojson',

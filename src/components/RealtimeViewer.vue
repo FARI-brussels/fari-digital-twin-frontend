@@ -9,6 +9,10 @@ import { fetchMobilityData, MobilityEndpoints, type MobilitySource } from '@/api
 import { apiClient } from '@/api';
 import { ComponentEndpoints, type ComponentSource } from '@/api/queries/components';
 import { getLayerStyle, type LayerStyleConfig } from '@/lib/layerStyles';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle, MapPin, X } from 'lucide-vue-next';
 
 const props = defineProps<{
   dataset?: RealtimeDataset;
@@ -26,6 +30,27 @@ const error = ref<string | null>(null);
 const pollInterval = ref<number | null>(null);
 const selectedInfo = ref<{ x: number; y: number; object: { properties: Record<string, unknown> } } | null>(null);
 const currentStyle = ref<LayerStyleConfig | null>(null);
+const currentZoom = ref(12);
+
+/**
+ * Calculate icon size based on zoom level
+ * At zoom 12 (default), use base size
+ * Smaller zoom = smaller icons, larger zoom = larger icons
+ */
+function getZoomAdjustedSize(baseSize: number): number {
+  const minZoom = 8;
+  const maxZoom = 18;
+  const minScale = 0.3;
+  const maxScale = 1.5;
+
+  // Clamp zoom to range
+  const zoom = Math.max(minZoom, Math.min(maxZoom, currentZoom.value));
+
+  // Linear interpolation between min and max scale
+  const scale = minScale + ((zoom - minZoom) / (maxZoom - minZoom)) * (maxScale - minScale);
+
+  return Math.round(baseSize * scale);
+}
 
 // Determine source type from dataset ID
 type SourceType = 'mobility' | 'component' | 'unknown';
@@ -128,6 +153,9 @@ function updateLayers() {
       properties: feature.properties,
     }));
 
+    const baseSize = currentStyle.value?.iconSize || 40;
+    const adjustedSize = getZoomAdjustedSize(baseSize);
+
     layers.push(
       new IconLayer({
         id: 'realtime-icons',
@@ -137,8 +165,12 @@ function updateLayers() {
         iconMapping: iconMapping,
         getIcon: () => 'marker',
         getPosition: (d: any) => d.coordinates,
-        getSize: currentStyle.value?.iconSize || 40,
+        getSize: adjustedSize,
         getColor: currentStyle.value?.iconColor || [255, 0, 0],
+        // Smooth transitions when zoom changes
+        transitions: {
+          getSize: 200,
+        },
         onClick: (info: { object?: any; x: number; y: number }) => {
           if (info.object) {
             selectedInfo.value = {
@@ -221,7 +253,13 @@ onMounted(() => {
   map.addControl(new maplibregl.NavigationControl());
   map.addControl(deckOverlay as unknown as IControl);
 
-  // Clean up on unmount
+  // Update icon sizes when zoom changes
+  map.on('zoom', () => {
+    if (map) {
+      currentZoom.value = map.getZoom();
+      updateLayers();
+    }
+  });
 });
 
 onUnmounted(() => {
@@ -234,56 +272,85 @@ onUnmounted(() => {
 <template>
   <div class="relative w-full h-full">
     <div ref="container" class="w-full h-full"></div>
-    
+
     <!-- Status Indicators -->
     <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
-      <div v-if="loading" class="bg-white px-3 py-1 rounded shadow text-sm">
+      <Badge v-if="loading" variant="outline" class="bg-background gap-2 py-1.5 px-3">
+        <Loader2 class="h-3 w-3 animate-spin" />
         Updating...
-      </div>
-      <div v-if="error" class="bg-red-500 text-white px-3 py-1 rounded shadow text-sm">
+      </Badge>
+      <Badge v-if="error" variant="destructive" class="gap-2 py-1.5 px-3">
+        <AlertCircle class="h-3 w-3" />
         {{ error }}
-      </div>
-      <div v-if="geojsonData" class="bg-white px-3 py-1 rounded shadow text-sm">
+      </Badge>
+      <Badge v-if="geojsonData" variant="secondary" class="gap-2 py-1.5 px-3">
+        <MapPin class="h-3 w-3" />
         {{ geojsonData.features?.length || 0 }} items
-      </div>
-    </div>
-    <!-- Tooltip -->
-    <div
-      v-if="selectedInfo"
-      class="absolute z-20 bg-white p-3 rounded shadow-lg text-sm max-w-xs"
-      :style="{ left: `${selectedInfo.x}px`, top: `${selectedInfo.y}px`, transform: 'translate(-50%, -100%)', marginTop: '-10px' }"
-    >
-      <div class="font-bold mb-1 border-b pb-1">Feature Details</div>
-      <div v-for="(value, key) in selectedInfo.object.properties" :key="key" class="grid grid-cols-2 gap-2">
-        <span class="font-semibold text-gray-600">{{ key }}:</span>
-        <span class="truncate">{{ value }}</span>
-      </div>
-      <button 
-        class="mt-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs py-1 rounded"
-        @click="selectedInfo = null"
-      >
-        Close
-      </button>
+      </Badge>
     </div>
 
-    <!-- Legend -->
-    <div 
-      v-if="currentStyle && currentStyle.legend"
-      class="absolute bottom-8 right-4 z-10 bg-white p-3 rounded shadow-lg text-sm"
+    <!-- Tooltip / Feature Details Card -->
+    <Card
+      v-if="selectedInfo"
+      class="absolute z-20 max-w-xs shadow-lg"
+      :style="{
+        left: `${selectedInfo.x}px`,
+        top: `${selectedInfo.y}px`,
+        transform: 'translate(-50%, -100%)',
+        marginTop: '-10px'
+      }"
     >
-      <div class="font-bold mb-2 border-b pb-1">{{ currentStyle.legend.title }}</div>
-      <div 
-        v-for="(item, index) in currentStyle.legend.items" 
-        :key="index"
-        class="flex items-center mb-1"
-      >
-        <div 
-          class="w-4 h-4 rounded mr-2" 
-          :style="{ backgroundColor: item.color }"
-        ></div>
-        <span>{{ item.label }}</span>
-      </div>
-    </div>
+      <CardHeader class="pb-2 pt-3 px-3">
+        <div class="flex items-center justify-between gap-2">
+          <CardTitle class="text-sm">Feature Details</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-6 w-6 p-0"
+            @click="selectedInfo = null"
+          >
+            <X class="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent class="px-3 pb-3 pt-0">
+        <div class="space-y-1 text-sm">
+          <div
+            v-for="(value, key) in selectedInfo.object.properties"
+            :key="key"
+            class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5"
+          >
+            <span class="font-medium text-muted-foreground">{{ key }}</span>
+            <span class="truncate text-foreground">{{ value }}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Legend Card -->
+    <Card
+      v-if="currentStyle && currentStyle.legend"
+      class="absolute bottom-8 right-4 z-10 shadow-lg py-2 gap-1"
+    >
+      <CardHeader class="py-0 px-3">
+        <CardTitle class="text-xs font-medium">{{ currentStyle.legend.title }}</CardTitle>
+      </CardHeader>
+      <CardContent class="px-3 py-0">
+        <div class="space-y-1">
+          <div
+            v-for="(item, index) in currentStyle.legend.items"
+            :key="index"
+            class="flex items-center gap-2 text-xs"
+          >
+            <div
+              class="w-2.5 h-2.5 rounded-sm shrink-0"
+              :style="{ backgroundColor: item.color }"
+            />
+            <span class="text-muted-foreground">{{ item.label }}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   </div>
 </template>
 

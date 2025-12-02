@@ -3,6 +3,8 @@ import LibraryBase from '@/components/LibraryBase.vue';
 import RealtimeViewer from '@/components/RealtimeViewer.vue';
 import { MobilityEndpoints } from '@/api/mobilityClient';
 import { ComponentEndpoints } from '@/api/queries/components';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import type { RealtimeDataset, LibraryItem } from '@/types';
 
 // Transform mobility endpoints into datasets
@@ -122,29 +124,34 @@ export function use${dataset.name.replace(/\s/g, '')}() {
       <li
         v-for="item in items"
         :key="item.id"
-        :class="[
-          'p-3 mb-2 rounded cursor-pointer transition-colors border border-gray-200 hover:bg-gray-100',
-          selectedItem?.id === item.id ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white',
-        ]"
-        @click="selectItem(item)"
+        class="px-4 py-1"
       >
-        <div class="font-bold text-gray-800">{{ item.name }}</div>
-        <div class="text-sm text-gray-600 mt-1 line-clamp-2">{{ item.description }}</div>
-        <div class="flex items-center gap-2 mt-2">
-          <span class="text-xs text-gray-400 font-mono bg-gray-100 inline-block px-1 rounded">
-            {{ (item as any).id }}
-          </span>
-          <span
-            :class="[
-              'text-xs px-2 py-0.5 rounded-full',
-              (item as any).type === 'mobility'
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-green-100 text-green-700'
-            ]"
-          >
-            {{ (item as any).type === 'mobility' ? '🌐 Ulb Mobility Twin' : '🏠 Fari Backend' }}
-          </span>
-        </div>
+        <Card
+          :class="[
+            'cursor-pointer transition-all hover:bg-accent/50',
+            selectedItem?.id === item.id
+              ? 'ring-2 ring-primary bg-accent/30'
+              : 'hover:shadow-md',
+          ]"
+          @click="selectItem(item)"
+        >
+          <CardHeader class="pb-2">
+            <CardTitle class="text-base">{{ item.name }}</CardTitle>
+            <CardDescription class="line-clamp-2">{{ item.description }}</CardDescription>
+          </CardHeader>
+          <CardContent class="pt-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" class="font-mono text-xs">
+                {{ (item as any).id }}
+              </Badge>
+              <Badge
+                :variant="(item as any).type === 'mobility' ? 'default' : 'secondary'"
+              >
+                {{ (item as any).type === 'mobility' ? 'ULB Mobility Twin' : 'FARI Backend' }}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
       </li>
     </template>
   </LibraryBase>

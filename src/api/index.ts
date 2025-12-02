@@ -28,6 +28,8 @@ export {
   useTilesetsQuery,
   useUploadTilesetMutation,
   useDeleteTilesetMutation,
+  pollUploadStatus,
+  type UploadStatusResponse,
 } from './queries/tilesets';
 
 // Realtime Data (Mobility Twin API)

@@ -4,39 +4,39 @@
 
 <template>
   <div class="flex flex-col h-screen">
-    <nav class="bg-gray-800 py-4 px-8 flex justify-center gap-8 shadow">
+    <nav class="bg-muted border-b border-border py-2 px-8 flex justify-center gap-2">
       <RouterLink
         to="/library/assets"
-        class="text-white font-bold text-lg px-3 py-1 rounded hover:bg-gray-700"
-        active-class="bg-gray-700"
+        class="text-muted-foreground font-medium px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
+        active-class="!bg-accent !text-accent-foreground"
       >
         3D Asset Library
       </RouterLink>
       <RouterLink
         to="/library/maps"
-        class="text-white font-bold text-lg px-3 py-1 rounded hover:bg-gray-700"
-        active-class="bg-gray-700"
+        class="text-muted-foreground font-medium px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
+        active-class="!bg-accent !text-accent-foreground"
       >
         Map Library
       </RouterLink>
       <RouterLink
         to="/library/tilesets"
-        class="text-white font-bold text-lg px-3 py-1 rounded hover:bg-gray-700"
-        active-class="bg-gray-700"
+        class="text-muted-foreground font-medium px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
+        active-class="!bg-accent !text-accent-foreground"
       >
         Tileset Library
       </RouterLink>
       <RouterLink
         to="/library/realtime"
-        class="text-white font-bold text-lg px-3 py-1 rounded hover:bg-gray-700"
-        active-class="bg-gray-700"
+        class="text-muted-foreground font-medium px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
+        active-class="!bg-accent !text-accent-foreground"
       >
         Realtime Data
       </RouterLink>
       <RouterLink
         to="/library/demo"
-        class="text-white font-bold text-lg px-3 py-1 rounded hover:bg-gray-700"
-        active-class="bg-gray-700"
+        class="text-muted-foreground font-medium px-4 py-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
+        active-class="!bg-accent !text-accent-foreground"
       >
         Demo
       </RouterLink>

@@ -194,31 +194,33 @@ const codeSnippets = {
     @uploaded="handleUploaded"
   >
     <template #list-item="{ items, selectedItem, selectItem, deleteItem, canDelete }">
-      <div v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="border-b border-border">
+      <li v-for="(layers, provider) in groupedLayers(items)" :key="provider" class="list-none">
         <!-- Provider Header -->
         <div
-          class="flex items-center gap-2 px-4 py-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+          class="group flex items-center gap-3 px-4 py-3 bg-muted/30 border-b border-border cursor-pointer transition-colors hover:bg-muted/60"
           @click="toggleProvider(provider)"
         >
           <!-- Expand/Collapse Icon -->
           <ChevronDown
             v-if="isProviderExpanded(provider)"
-            class="w-4 h-4 text-muted-foreground flex-shrink-0"
+            class="w-4 h-4 text-muted-foreground shrink-0 transition-transform"
           />
           <ChevronRight
             v-else
-            class="w-4 h-4 text-muted-foreground flex-shrink-0"
+            class="w-4 h-4 text-muted-foreground shrink-0"
           />
 
           <!-- Provider Icon -->
-          <div class="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center flex-shrink-0">
-            <Globe class="w-4 h-4 text-secondary" />
+          <div class="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <Globe class="w-5 h-5 text-muted-foreground" />
           </div>
 
           <!-- Provider Info -->
           <div class="flex-1 min-w-0">
             <p class="font-medium text-foreground truncate">{{ getProviderName(provider) }}</p>
-            <p class="text-xs text-muted-foreground">{{ layers.length }} layer{{ layers.length > 1 ? 's' : '' }}</p>
+            <p class="text-xs text-muted-foreground">
+              {{ layers.length }} layer{{ layers.length > 1 ? 's' : '' }}
+            </p>
           </div>
 
           <!-- Delete All Button (only when authenticated) -->
@@ -226,42 +228,41 @@ const codeSnippets = {
             v-if="canDelete"
             variant="ghost"
             size="sm"
-            class="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
             :disabled="deletingProvider === String(provider)"
             @click.stop="requestDeleteAllFromProvider(provider)"
           >
-            <Trash2 class="w-4 h-4 mr-1" />
-            {{ deletingProvider === String(provider) ? 'Deleting...' : 'Delete all' }}
+            <Trash2 class="w-4 h-4" />
           </Button>
         </div>
 
         <!-- Layers List (collapsible) -->
-        <ul v-if="isProviderExpanded(provider)" class="bg-background">
+        <ul v-if="isProviderExpanded(provider)" class="list-none">
           <li
             v-for="layer in layers"
             :key="`${layer.url}-${layer.layer}`"
-            class="group flex items-center gap-3 px-4 py-3 pl-12 border-b border-border/50 cursor-pointer transition-colors"
+            class="group flex items-center gap-3 px-4 py-3 pl-12 border-b border-border cursor-pointer transition-colors"
             :class="[
               selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url
-                ? 'bg-secondary/10 border-l-2 border-l-secondary'
-                : 'hover:bg-muted/30',
+                ? 'bg-accent/10 border-l-2 border-l-accent'
+                : 'hover:bg-muted/50',
             ]"
             @click="selectItem(layer)"
           >
             <!-- Layer Icon -->
             <div
-              class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
               :class="[
                 selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url
-                  ? 'bg-secondary/20'
+                  ? 'bg-accent/20'
                   : 'bg-muted',
               ]"
             >
               <Layers
-                class="w-4 h-4"
+                class="w-5 h-5"
                 :class="[
                   selectedItem && selectedItem.layer === layer.layer && selectedItem.url === layer.url
-                    ? 'text-secondary'
+                    ? 'text-accent'
                     : 'text-muted-foreground',
                 ]"
               />
@@ -270,7 +271,7 @@ const codeSnippets = {
             <!-- Layer Info -->
             <div class="flex-1 min-w-0">
               <p class="font-medium text-foreground truncate">{{ layer.description }}</p>
-              <p class="text-xs text-muted-foreground truncate">{{ layer.layer }}</p>
+              <p class="text-xs text-muted-foreground font-mono truncate">{{ layer.layer }}</p>
             </div>
 
             <!-- Delete Single Layer Button (only when authenticated) -->
@@ -285,7 +286,7 @@ const codeSnippets = {
             </Button>
           </li>
         </ul>
-      </div>
+      </li>
     </template>
   </LibraryBase>
 

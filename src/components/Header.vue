@@ -2,9 +2,18 @@
 import { computed } from 'vue';
 import { useKeycloak } from '@josempgon/vue-keycloak';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import FariLogo from '@/assets/FariLogo.vue';
 import { buildRedirectUri, getLogoutRedirectUri } from '@/utils/path';
 import type { KeycloakTokenParsed } from '@/types';
+import { LogOut } from 'lucide-vue-next';
 
 const { keycloak, isAuthenticated, isPending, decodedToken, username } = useKeycloak();
 
@@ -22,6 +31,22 @@ const displayName = computed<string>(() => {
   const kc = keycloak.value;
   const tokenPayload = (decodedToken.value ?? kc?.tokenParsed) as KeycloakTokenParsed | undefined;
   return tokenPayload?.name ?? tokenPayload?.preferred_username ?? username.value ?? '';
+});
+
+const userEmail = computed<string>(() => {
+  const kc = keycloak.value;
+  const tokenPayload = (decodedToken.value ?? kc?.tokenParsed) as KeycloakTokenParsed | undefined;
+  return tokenPayload?.email ?? '';
+});
+
+const avatarUrl = computed<string>(() => {
+  const name = displayName.value || 'User';
+  const initials = name
+    .split(' ')
+    .map(n => n[0])
+    .join('+')
+    .toUpperCase();
+  return `https://ui-avatars.com/api/?name=${initials}&bold=true&color=FFFFFF&background=64d8bf&size=32`;
 });
 
 function handleLogin(): void {
@@ -74,18 +99,30 @@ function handleLogout(): void {
       </template>
 
       <!-- Authenticated -->
-      <template v-else>
-        <span class="text-sm font-medium">
-          {{ displayName || 'Authenticated' }}
-        </span>
-        <Button
-          variant="ghost"
-          class="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
-          @click="handleLogout"
-        >
-          Sign out
-        </Button>
-      </template>
+      <DropdownMenu v-else>
+        <DropdownMenuTrigger as-child>
+          <button class="flex items-center gap-2 rounded-full cursor-pointer hover:ring-2 hover:ring-white/20 transition-all">
+            <img
+              :src="avatarUrl"
+              :alt="displayName"
+              class="h-8 w-8 rounded-full"
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" class="w-56">
+          <DropdownMenuLabel class="font-normal">
+            <div class="flex flex-col space-y-1">
+              <p class="text-sm font-medium">{{ displayName }}</p>
+              <p v-if="userEmail" class="text-xs text-muted-foreground">{{ userEmail }}</p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem class="cursor-pointer" @click="handleLogout">
+            <LogOut class="mr-2 h-4 w-4" />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </nav>
   </header>
 </template>

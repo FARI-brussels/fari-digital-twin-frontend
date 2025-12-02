@@ -283,7 +283,7 @@ async function copyCode(): Promise<void> {
 
         <!-- Items List -->
         <div v-else class="h-full overflow-y-auto">
-          <ul>
+          <ul class="m-0 p-0">
             <slot
               name="list-item"
               :items="displayItems"

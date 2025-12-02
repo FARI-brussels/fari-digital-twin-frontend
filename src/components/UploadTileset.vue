@@ -2,17 +2,19 @@
 /**
  * UploadTileset - Upload form for 3D Tilesets
  * Requires authentication to upload
+ * Supports async upload processing for large files with progress tracking
  */
 import { ref, computed } from 'vue';
 import { useAuth } from '@/composables/useAuth';
-import { useUploadTilesetMutation } from '@/api';
+import { useUploadTilesetMutation, pollUploadStatus, type UploadStatusResponse } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import LoginPrompt from '@/components/LoginPrompt.vue';
-import { Upload, FileArchive, X, CheckCircle2, AlertCircle, Building } from 'lucide-vue-next';
+import { Upload, FileArchive, X, CheckCircle2, AlertCircle, Building, Loader2 } from 'lucide-vue-next';
 
 // ============================================================================
 // Emits
@@ -39,6 +41,11 @@ const source = ref('');
 const successMessage = ref('');
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
+
+// Async upload state
+const isProcessing = ref(false);
+const processingStatus = ref<'pending' | 'processing' | 'completed' | 'failed'>('pending');
+const processingProgress = ref(0);
 
 // ============================================================================
 // Mutation
@@ -103,9 +110,38 @@ async function uploadTileset(): Promise<void> {
   formData.append('source', source.value);
 
   successMessage.value = '';
+  isProcessing.value = false;
+  processingProgress.value = 0;
 
   try {
-    await uploadMutation.mutateAsync(formData);
+    const result = await uploadMutation.mutateAsync(formData);
+
+    // Handle async upload - poll for completion
+    if (result.isAsync) {
+      isProcessing.value = true;
+      processingStatus.value = 'pending';
+      processingProgress.value = 10;
+
+      const finalStatus = await pollUploadStatus(
+        result.id,
+        (status: UploadStatusResponse) => {
+          processingStatus.value = status.status;
+          // Simulate progress based on status
+          if (status.status === 'processing') {
+            processingProgress.value = Math.min(processingProgress.value + 5, 90);
+          }
+        }
+      );
+
+      isProcessing.value = false;
+
+      if (finalStatus.status === 'failed') {
+        throw new Error(finalStatus.error || 'Upload processing failed');
+      }
+
+      processingProgress.value = 100;
+    }
+
     successMessage.value = 'Tileset uploaded successfully!';
     description.value = '';
     source.value = '';
@@ -114,8 +150,12 @@ async function uploadTileset(): Promise<void> {
     setTimeout(() => {
       emit('uploaded');
     }, 1500);
-  } catch {
-    // Error is handled by the mutation
+  } catch (err) {
+    isProcessing.value = false;
+    // If it's a custom error from polling, show it
+    if (err instanceof Error && err.message !== 'Upload processing failed') {
+      uploadMutation.error.value = err;
+    }
   }
 }
 
@@ -244,6 +284,25 @@ function handleCancel(): void {
           <span class="text-sm">{{ error }}</span>
         </div>
 
+        <!-- Processing Progress (async upload) -->
+        <div
+          v-if="isProcessing"
+          class="space-y-3 rounded-lg border border-accent/20 bg-accent/5 px-4 py-4"
+        >
+          <div class="flex items-center gap-3">
+            <Loader2 class="h-5 w-5 animate-spin text-accent" />
+            <div class="flex-1">
+              <p class="font-medium text-foreground">
+                {{ processingStatus === 'pending' ? 'Queued for processing...' : 'Extracting tileset files...' }}
+              </p>
+              <p class="text-sm text-muted-foreground">
+                Large files are processed in the background. This may take a few minutes.
+              </p>
+            </div>
+          </div>
+          <Progress :model-value="processingProgress" class="h-2" />
+        </div>
+
         <!-- Success Message -->
         <div
           v-if="successMessage"
@@ -262,10 +321,11 @@ function handleCancel(): void {
           </Button>
           <Button
             type="submit"
-            :disabled="!file || !description || !source || uploading"
+            :disabled="!file || !description || !source || uploading || isProcessing"
           >
-            <Upload class="mr-2 h-4 w-4" />
-            {{ uploading ? 'Uploading...' : 'Upload Tileset' }}
+            <Loader2 v-if="uploading || isProcessing" class="mr-2 h-4 w-4 animate-spin" />
+            <Upload v-else class="mr-2 h-4 w-4" />
+            {{ uploading ? 'Uploading...' : isProcessing ? 'Processing...' : 'Upload Tileset' }}
           </Button>
         </div>
       </form>

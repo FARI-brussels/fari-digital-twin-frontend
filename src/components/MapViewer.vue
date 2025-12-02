@@ -3,6 +3,8 @@ import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { MapLayer } from '@/types';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Map } from 'lucide-vue-next';
 
 // ============================================================================
 // Props Definition
@@ -70,6 +72,7 @@ function updateMapLayer(newMapLayer: MapLayer): void {
     if (currentImageryLayer) {
       viewer.imageryLayers.remove(currentImageryLayer, false);
     }
+
     currentImageryLayer = viewer.imageryLayers.addImageryProvider(
       new Cesium.WebMapServiceImageryProvider({
         url: newMapLayer.url,
@@ -116,8 +119,25 @@ onBeforeUnmount(() => {
 <template>
   <div class="w-full h-full relative bg-black">
     <div ref="cesiumContainer" class="w-full h-full"></div>
-    <div v-if="legendUrl" class="absolute bottom-5 right-5 bg-white/80 p-2 rounded z-[1005]">
-      <img :src="legendUrl" alt="Map Legend" class="max-w-[200px] max-h-[300px] block" />
-    </div>
+
+    <!-- Legend Card -->
+    <Card
+      v-if="legendUrl"
+      class="absolute bottom-4 right-4 z-[1005] shadow-lg py-2 gap-1 bg-background/95 backdrop-blur-sm"
+    >
+      <CardHeader class="py-0 px-3">
+        <div class="flex items-center gap-2">
+          <Map class="w-3.5 h-3.5 text-muted-foreground" />
+          <CardTitle class="text-xs font-medium">Legend</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent class="px-3 py-0 pt-1">
+        <img
+          :src="legendUrl"
+          alt="Map Legend"
+          class="max-w-[180px] max-h-[250px] block rounded"
+        />
+      </CardContent>
+    </Card>
   </div>
 </template>

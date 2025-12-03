@@ -122,14 +122,22 @@ async function loadTileset(url: string): Promise<void> {
       viewer.scene.primitives.remove(currentTileset);
     }
 
-    // Get auth token if available (non-blocking)
-    const token = await getToken();
+    // For external URLs (OVH S3), don't send Authorization header
+    // OVH interprets it as AWS auth request and fails
+    const isExternalUrl = url.startsWith('http://') || url.startsWith('https://');
 
-    // Create Resource with auth headers if token is available
-    const resource = new Cesium.Resource({
-      url,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
+    let resource: Cesium.Resource;
+    if (isExternalUrl) {
+      // External URL (OVH) - no auth headers needed, files are public
+      resource = new Cesium.Resource({ url });
+    } else {
+      // Internal URL (our API) - include auth token
+      const token = await getToken();
+      resource = new Cesium.Resource({
+        url,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+    }
 
     const tileset = await Cesium.Cesium3DTileset.fromUrl(resource);
     currentTileset = viewer.scene.primitives.add(tileset) as Cesium.Cesium3DTileset;

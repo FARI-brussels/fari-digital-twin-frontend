@@ -9,7 +9,7 @@
       leave-to-class="opacity-0"
     >
       <div 
-        v-if="loading || !ready"
+        v-if="loading || !ready || dataLoading"
         class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50 z-20"
       >
         <div class="text-center">
@@ -17,39 +17,35 @@
             <Loader2 class="h-6 w-6 text-violet-500 animate-spin" />
           </div>
           <p class="text-slate-700 font-medium">Loading realtime data...</p>
+          <p v-if="props.dataset" class="text-slate-500 text-sm mt-1">{{ props.dataset.name }}</p>
         </div>
       </div>
     </Transition>
 
     <div class="absolute top-4 right-4 z-10 pointer-events-auto flex flex-col gap-2">
       <div 
-        v-if="featureCount > 0"
+        v-if="props.dataset"
         class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-xl border border-slate-200/50 shadow-lg shadow-slate-200/50"
       >
-        <div class="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-        <MapPin class="w-4 h-4 text-violet-500" />
-        <span class="text-sm font-medium text-slate-700">{{ featureCount }} items</span>
+        <Radio class="w-4 h-4 text-violet-500" />
+        <span class="text-sm font-medium text-slate-700">{{ props.dataset.name }}</span>
       </div>
 
       <div 
-        v-if="currentStyle?.legend"
-        class="p-3 rounded-xl bg-white/90 backdrop-blur-xl border border-slate-200/50 shadow-lg shadow-slate-200/50"
+        v-if="featureCount > 0"
+        class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-xl border border-slate-200/50 shadow-lg shadow-slate-200/50"
       >
-        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Legend</p>
-        <div class="space-y-1.5">
-          <div 
-            v-for="item in currentStyle.legend" 
-            :key="item.label"
-            class="flex items-center gap-2"
-          >
-            <div 
-              class="w-3 h-3 rounded-full" 
-              :style="{ backgroundColor: item.color }"
-            />
-            <span class="text-xs text-slate-600">{{ item.label }}</span>
-          </div>
-        </div>
+        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <MapPin class="w-4 h-4 text-emerald-500" />
+        <span class="text-sm font-medium text-slate-700">{{ featureCount }} items</span>
       </div>
+    </div>
+
+    <div class="absolute bottom-20 right-4 z-10 pointer-events-auto">
+      <MapLegend 
+        :legend="legendData"
+        :show-icon="true"
+      />
     </div>
 
     <Transition
@@ -81,7 +77,7 @@
               class="flex items-start gap-3 py-2 border-b border-slate-100 last:border-0"
             >
               <span class="text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[100px]">
-                {{ String(key).replace('_', ' ') }}
+                {{ String(key).replace(/_/g, ' ') }}
               </span>
               <span class="text-sm text-slate-700 flex-1">{{ value }}</span>
             </div>
@@ -106,13 +102,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, computed, onBeforeUnmount } from 'vue';
 import { useCesiumViewer } from '@/composables/cesium';
 import { ScreenSpaceEventHandler, ScreenSpaceEventType, defined } from 'cesium';
 import { ViewerControls } from '@/components/ui/viewer-controls';
-import { Loader2, MapPin, X } from 'lucide-vue-next';
+import { MapLegend } from '@/components/ui/map-legend';
+import { Loader2, MapPin, Radio, X } from 'lucide-vue-next';
 import type { RealtimeDataset } from '@/types';
 import { getLayerStyle } from '@/lib/layerStyles';
+import type { Legend } from '@/components/ui/map-legend/MapLegend.vue';
 
 interface SelectedFeatureData {
   id: string;
@@ -126,6 +124,8 @@ const props = defineProps<{
 const wrapperRef = ref<HTMLElement | null>(null);
 const containerRef = ref<HTMLElement | null>(null);
 const selectedFeature = ref<SelectedFeatureData | null>(null);
+const dataLoading = ref(false);
+const currentDatasetId = ref<string | null>(null);
 
 const {
   viewer,
@@ -135,6 +135,7 @@ const {
   currentSourceId,
   startPolling,
   stopPolling,
+  clear,
   zoomIn,
   zoomOut,
   rotateLeft,
@@ -152,9 +153,15 @@ const {
   },
 });
 
-const currentStyle = computed(() =>
-  currentSourceId.value ? getLayerStyle(currentSourceId.value) : null
-);
+const legendData = computed(() => {
+  const style = currentSourceId.value ? getLayerStyle(currentSourceId.value) : null;
+  if (!style?.legend) return null;
+  
+  return {
+    title: 'Legend',
+    items: style.legend,
+  };
+});
 
 let clickHandler: ScreenSpaceEventHandler | null = null;
 
@@ -202,9 +209,44 @@ const closeFeatureDetails = (): void => {
   selectedFeature.value = null;
 };
 
-// Configure controls when ready
-onMounted(() => {
-  watch(ready, (isReady) => {
+async function loadDataset(dataset: RealtimeDataset) {
+  if (!ready.value) return;
+  
+
+  selectedFeature.value = null;
+  dataLoading.value = true;
+
+  try {
+    stopPolling();
+    clear();
+
+    await startPolling({
+      options: {
+        sourceId: dataset.id,
+        pollInterval: 20000,
+      },
+    });
+
+    currentDatasetId.value = dataset.id;
+  } catch (err) {
+    console.error('[RealtimeViewer] Failed to load dataset:', err);
+  } finally {
+    dataLoading.value = false;
+  }
+}
+
+watch(
+  () => props.dataset,
+  (newDataset, oldDataset) => {
+    if (ready.value && newDataset && newDataset.id !== oldDataset?.id) {
+      loadDataset(newDataset);
+    }
+  }
+);
+
+watch(
+  ready,
+  (isReady) => {
     if (isReady) {
       configureControls({
         enableRotate: true,
@@ -214,20 +256,17 @@ onMounted(() => {
       });
       setupClickHandler();
 
-      if (props.dataset) {
-        startPolling({
-          options: {
-            sourceId: props.dataset.id,
-            pollInterval: 20000,
-          },
-        });
+      if (props.dataset && !currentDatasetId.value) {
+        loadDataset(props.dataset);
       }
     }
-  }, { immediate: true });
-});
+  },
+  { immediate: true }
+);
 
 onBeforeUnmount(() => {
   cleanupClickHandler();
   stopPolling();
+  clear();
 });
 </script>

@@ -21,15 +21,11 @@
       </div>
     </Transition>
 
-    <div v-if="legendUrl" class="absolute top-4 right-4 z-10 pointer-events-auto">
-      <div class="p-3 rounded-xl bg-white/60 backdrop-blur-xl border border-slate-200/50 shadow-lg shadow-slate-200/50">
-        <img 
-          :src="legendUrl" 
-          alt="Map legend" 
-          class="max-w-[200px] rounded-lg"
-          @error="legendError = true"
-        />
-      </div>
+    <div class="absolute bottom-20 right-4 z-10 pointer-events-auto">
+      <MapLegend 
+        :image-src="legendUrl"
+        :show-icon="true"
+      />
     </div>
 
     <ViewerControls
@@ -51,14 +47,14 @@
 import { computed, watch, onMounted, onBeforeUnmount, ref } from 'vue';
 import { useCesiumViewer } from '@/composables/cesium';
 import { ViewerControls } from '@/components/ui/viewer-controls';
+import { MapLegend } from '@/components/ui/map-legend';
 import { Loader2 } from 'lucide-vue-next';
 import type { MapLayer } from '@/types';
 
 const props = defineProps<{ mapLayer: MapLayer | null }>();
 
 const wrapperRef = ref<HTMLElement | null>(null);
-const containerRef = ref<HTMLElement | null>(null);
-const legendError = ref(false);
+const containerRef = ref<HTMLDivElement | null>(null);
 
 const {
   viewer,
@@ -83,10 +79,9 @@ const {
   },
 });
 
-let currentLayer: unknown = null;
+let currentLayer: any = null;
 
 const legendUrl = computed(() => {
-  if (legendError.value) return '';
   const l = props.mapLayer;
   if (!l?.url || !l.layer) return '';
   const base = l.url.split('?')[0];
@@ -110,8 +105,6 @@ onMounted(() => {
 watch(
   () => props.mapLayer,
   async (newLayer) => {
-    legendError.value = false;
-    
     if (currentLayer) {
       removeWMSLayer(currentLayer);
       currentLayer = null;

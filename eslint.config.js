@@ -34,6 +34,8 @@ export default [
         Blob: 'readonly',
         URL: 'readonly',
         Buffer: 'readonly',
+        sessionStorage: 'readonly',
+        navigator: 'readonly',
       },
     },
     plugins: {

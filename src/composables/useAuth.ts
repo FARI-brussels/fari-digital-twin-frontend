@@ -1,84 +1,78 @@
-/**
- * Authentication composable for consistent auth state management
- * Provides reactive auth state and helper methods for protected features
- */
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useKeycloak } from '@josempgon/vue-keycloak';
 import { buildRedirectUri } from '@/utils/path';
 import type { KeycloakTokenParsed } from '@/types';
 
 export function useAuth() {
+  const route = useRoute();
   const { keycloak, isAuthenticated, isPending, decodedToken, username } = useKeycloak();
 
   const publicOrigin = window.location.origin;
   const loginRedirectPath = import.meta.env.VITE_KEYCLOAK_REDIRECT_PATH ?? '/callback';
   const keycloakRedirectUri = buildRedirectUri(publicOrigin, loginRedirectPath);
 
-  /**
-   * Display name from token (name > preferred_username > username)
-   */
-  const displayName = computed<string>(() => {
+  const displayName = computed(() => {
     const kc = keycloak.value;
     const tokenPayload = (decodedToken.value ?? kc?.tokenParsed) as KeycloakTokenParsed | undefined;
     return tokenPayload?.name ?? tokenPayload?.preferred_username ?? username.value ?? '';
   });
 
-  /**
-   * User's Keycloak ID (sub claim)
-   */
-  const userId = computed<string | null>(() => {
+  const userEmail = computed(() => {
+    const kc = keycloak.value;
+    const tokenPayload = (decodedToken.value ?? kc?.tokenParsed) as KeycloakTokenParsed | undefined;
+    return tokenPayload?.email ?? '';
+  });
+
+  const userId = computed(() => {
     const kc = keycloak.value;
     const tokenPayload = (decodedToken.value ?? kc?.tokenParsed) as KeycloakTokenParsed | undefined;
     return tokenPayload?.sub ?? null;
   });
 
-  /**
-   * User's roles from realm_access
-   */
-  const userRoles = computed<string[]>(() => {
+  const userRoles = computed(() => {
     const kc = keycloak.value;
     const tokenPayload = (decodedToken.value ?? kc?.tokenParsed) as KeycloakTokenParsed | undefined;
     return tokenPayload?.realm_access?.roles ?? [];
   });
 
-  /**
-   * Check if user has admin role
-   */
-  const isAdmin = computed<boolean>(() => {
-    return userRoles.value.includes('admin');
+  const isAdmin = computed(() => userRoles.value.includes('admin'));
+  const canWrite = computed(() => isAuthenticated.value);
+
+  const avatarUrl = computed(() => {
+    const name = displayName.value || 'User';
+    const initials = name
+      .split(' ')
+      .map(n => n[0])
+      .join('+')
+      .toUpperCase();
+    return `https://ui-avatars.com/api/?name=${initials}&bold=true&color=FFFFFF&background=64d8bf&size=32`;
   });
 
-  /**
-   * Can the user perform write operations (upload, edit, delete)?
-   */
-  const canWrite = computed<boolean>(() => {
-    return isAuthenticated.value;
-  });
+  function storeReturnPath(): void {
+    window.sessionStorage.setItem('auth_return_path', route.fullPath);
+  }
 
-  /**
-   * Trigger login flow
-   */
   function login(): void {
+    storeReturnPath();
     keycloak.value?.login({ redirectUri: keycloakRedirectUri });
   }
 
-  /**
-   * Trigger register flow
-   */
   function register(): void {
+    storeReturnPath();
     keycloak.value?.register({ redirectUri: keycloakRedirectUri });
   }
 
-  /**
-   * Get current access token (for use with external libraries like Cesium)
-   * Returns null if not authenticated
-   */
+  function logout(redirectUri?: string): void {
+    if (redirectUri) keycloak.value?.logout({ redirectUri });
+    else keycloak.value?.logout();
+  }
+
   async function getToken(): Promise<string | null> {
     const kc = keycloak.value;
     if (!kc || !isAuthenticated.value) return null;
 
     try {
-      // Refresh token if needed (within 30 seconds of expiry)
       await kc.updateToken(30);
       return kc.token ?? null;
     } catch {
@@ -87,19 +81,19 @@ export function useAuth() {
   }
 
   return {
-    // State
     isAuthenticated,
     isPending,
     displayName,
+    userEmail,
     userId,
     userRoles,
     isAdmin,
     canWrite,
-    // Actions
+    avatarUrl,
     login,
     register,
+    logout,
     getToken,
-    // Raw keycloak instance for advanced usage
     keycloak,
   };
 }

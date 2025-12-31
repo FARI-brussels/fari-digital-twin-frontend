@@ -1,206 +1,243 @@
+<template>
+  <div ref="wrapperRef" class="relative w-full h-full bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden">
+    <div ref="containerRef" class="absolute inset-0" />
+
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-300"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="loading || !ready || tilesetLoading"
+        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50 z-20"
+      >
+        <div class="text-center">
+          <div class="mx-auto mb-4 h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center shadow-lg shadow-emerald-500/10">
+            <Loader2 class="h-6 w-6 text-emerald-500 animate-spin" />
+          </div>
+          <p class="text-slate-700 font-medium">Loading tileset...</p>
+          <p class="text-slate-500 text-sm mt-1">This may take a moment</p>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-300"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="tilesetError && !tilesetLoading"
+        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 z-30"
+      >
+        <div class="text-center max-w-sm px-6">
+          <div class="mx-auto mb-4 h-16 w-16 rounded-2xl bg-red-100 flex items-center justify-center">
+            <AlertCircle class="h-8 w-8 text-red-500" />
+          </div>
+          <p class="text-red-700 font-semibold mb-2">Failed to load tileset</p>
+          <p class="text-red-600/70 text-sm">{{ tilesetError }}</p>
+          <button
+            class="mt-4 px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition-colors"
+            @click="retryLoad"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <div class="absolute top-4 right-4 z-10 pointer-events-auto">
+      <label class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/90 backdrop-blur-xl border border-slate-200/50 shadow-lg shadow-slate-200/50 text-slate-700 text-sm font-medium cursor-pointer select-none hover:bg-white transition-colors">
+        <input 
+          v-model="showWmsLayer" 
+          type="checkbox" 
+          class="w-4 h-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500/25"
+        />
+        <Map class="w-4 h-4 text-slate-500" />
+        <span>UrbIS Base Map</span>
+      </label>
+    </div>
+
+    <ViewerControls
+      :show-rotation="true"
+      :show-reset="true"
+      :show-fullscreen="true"
+      :show-corners="true"
+      :fullscreen-target="wrapperRef"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @rotate-left="() => rotateLeft(30)"
+      @rotate-right="() => rotateRight(30)"
+      @reset="handleReset"
+    />
+  </div>
+</template>
+
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import * as Cesium from 'cesium';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
-import { useAuth } from '@/composables/useAuth';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useCesiumViewer } from '@/composables/cesium';
+import { ViewerControls } from '@/components/ui/viewer-controls';
+import { Loader2, AlertCircle, Map } from 'lucide-vue-next';
+import type { Cesium3DTileset } from 'cesium';
 
-// ============================================================================
-// Props Definition
-// ============================================================================
+const props = defineProps<{ tilesetUrl: string }>();
 
-interface Props {
-  tilesetUrl: string;
-}
+const wrapperRef = ref<HTMLElement | null>(null);
+const containerRef = ref<HTMLElement | null>(null);
 
-const props = defineProps<Props>();
+const {
+  viewer,
+  ready,
+  loading,
+  addWMSLayer,
+  removeWMSLayer,
+  addTileset,
+  removeTilesetByUrl,
+  zoomIn,
+  zoomOut,
+  rotateLeft,
+  rotateRight,
+  resetView,
+  configureControls,
+} = useCesiumViewer({
+  container: containerRef,
+  initialViewState: {
+    longitude: 4.36,
+    latitude: 50.7,
+    altitude: 10000,
+    pitch: -32,
+    bearing: 0,
+  },
+  enableTerrain: true,
+});
 
-// ============================================================================
-// Auth
-// ============================================================================
-
-const { getToken } = useAuth();
-
-// ============================================================================
-// State
-// ============================================================================
-
-const viewerContainer = ref<HTMLDivElement | null>(null);
-const loading = ref(true);
-const error = ref<string | null>(null);
 const showWmsLayer = ref(true);
+const tilesetLoading = ref(false);
+const tilesetError = ref<string | null>(null);
+const currentUrl = ref<string | null>(null);
+const currentTileset = ref<Cesium3DTileset | null>(null);
 
-let viewer: Cesium.Viewer | null = null;
-let currentTileset: Cesium.Cesium3DTileset | null = null;
-let wmsImageryLayer: Cesium.ImageryLayer | null = null;
+let urbisLayer: unknown = null;
 
-// ============================================================================
-// Methods
-// ============================================================================
-
-function initializeViewer(): void {
-  if (viewerContainer.value && !viewer) {
-    // Set Cesium Ion access token
-    const cesiumToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
-    if (cesiumToken) {
-      Cesium.Ion.defaultAccessToken = cesiumToken;
+onMounted(() => {
+  watch(ready, (isReady) => {
+    if (isReady) {
+      configureControls({
+        enableRotate: true,
+        enableZoom: true,
+        enableTilt: true,
+        enableLook: true,
+      });
     }
+  }, { immediate: true });
+});
 
-    viewer = new Cesium.Viewer(viewerContainer.value, {
-      timeline: false,
-      animation: false,
-      baseLayerPicker: false,
-      geocoder: false,
-      homeButton: false,
-      sceneModePicker: false,
-      selectionIndicator: true,
-      navigationHelpButton: false,
-      infoBox: true,
-    });
-
-    // Add OpenStreetMap imagery layer
-    viewer.imageryLayers.addImageryProvider(
-      new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/',
-      })
+watch(ready, (isReady) => {
+  if (isReady && showWmsLayer.value && !urbisLayer) {
+    urbisLayer = addWMSLayer(
+      'https://geoservices-urbis.irisnet.be/geoserver/BaseMaps/ows',
+      'UrbISNotLabeledGray',
+      {
+        opacity: 0.9,
+        maximumLevel: 21,
+        tileWidth: 512,
+        tileHeight: 512,
+        parameters: {
+          transparent: true,
+          format: 'image/png',
+        },
+      }
     );
-
-    // Set terrain only if Ion token is available
-    if (cesiumToken) {
-      viewer.scene.setTerrain(
-        new Cesium.Terrain(Cesium.CesiumTerrainProvider.fromIonAssetId(3340034))
-      );
-    }
-
-    // Add WMS layer by default
-    addWmsLayer();
   }
-}
+}, { immediate: true });
 
-function addWmsLayer(): void {
-  if (!viewer || wmsImageryLayer) return;
+watch(showWmsLayer, (val) => {
+  if (!ready.value) return;
+  if (val && !urbisLayer) {
+    urbisLayer = addWMSLayer(
+      'https://geoservices-urbis.irisnet.be/geoserver/BaseMaps/ows',
+      'UrbISNotLabeledGray',
+      {
+        opacity: 0.9,
+        maximumLevel: 21,
+        parameters: { transparent: true, format: 'image/png' },
+      }
+    );
+  } else if (!val && urbisLayer) {
+    removeWMSLayer(urbisLayer);
+    urbisLayer = null;
+  }
+});
+
+async function loadTileset(url: string, shouldZoom = true) {
+  if (!url) return;  
+  tilesetLoading.value = true;
+  tilesetError.value = null;
 
   try {
-    const wmsProvider = new Cesium.WebMapServiceImageryProvider({
-      url: 'https://geoservices-urbis.irisnet.be/geoserver/BaseMaps/ows',
-      layers: 'UrbISNotLabeledGray',
-      parameters: {
-        service: 'WMS',
-        format: 'image/png',
-        transparent: true,
-      },
-    });
-
-    wmsImageryLayer = viewer.imageryLayers.addImageryProvider(wmsProvider);
-  } catch (err) {
-    console.error('Failed to add WMS layer:', err);
-  }
-}
-
-function removeWmsLayer(): void {
-  if (viewer && wmsImageryLayer) {
-    viewer.imageryLayers.remove(wmsImageryLayer);
-    wmsImageryLayer = null;
-  }
-}
-
-function toggleWmsLayer(): void {
-  if (showWmsLayer.value) {
-    addWmsLayer();
-  } else {
-    removeWmsLayer();
-  }
-}
-
-async function loadTileset(url: string): Promise<void> {
-  if (!viewer || !url) return;
-
-  loading.value = true;
-  error.value = null;
-
-  try {
-    if (currentTileset) {
-      viewer.scene.primitives.remove(currentTileset);
+    if (currentUrl.value && currentUrl.value !== url) {
+      removeTilesetByUrl(currentUrl.value);
+      currentTileset.value = null;
     }
 
-    // Get auth token if available (non-blocking)
-    const token = await getToken();
-
-    // Create Resource with auth headers if token is available
-    const resource = new Cesium.Resource({
-      url,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    const tileset = await addTileset(url, {
+      zoomTo: shouldZoom,
+      maximumScreenSpaceError: 4,
+      heading: 240,
+      pitch: -25, 
+      distanceMultiplier: 1.8, 
     });
 
-    const tileset = await Cesium.Cesium3DTileset.fromUrl(resource);
-    currentTileset = viewer.scene.primitives.add(tileset) as Cesium.Cesium3DTileset;
+    if (!tileset) {
+      throw new Error('Tileset failed to load - returned null');
+    }
 
-    await viewer.zoomTo(tileset);
-  } catch (err) {
-    console.error('Failed to load tileset:', err);
-    error.value = 'Error loading tileset. The URL might be invalid or inaccessible.';
+    currentTileset.value = tileset;
+    currentUrl.value = url;
+  } catch (err: unknown) {
+    console.error('[TilesetViewer] Load failed:', err);
+    tilesetError.value = err?.message || 'Could not load 3D tileset. It may be private or invalid.';
+    currentTileset.value = null;
+    currentUrl.value = null;
   } finally {
-    loading.value = false;
+    tilesetLoading.value = false;
   }
 }
 
-// ============================================================================
-// Watchers
-// ============================================================================
+function retryLoad() {
+  if (props.tilesetUrl) {
+    loadTileset(props.tilesetUrl, true);
+  }
+}
+
+function handleReset() {
+  if (viewer.value && currentTileset.value) {
+    viewer.value.zoomTo(currentTileset.value);
+  } else {
+    resetView();
+  }
+}
 
 watch(
   () => props.tilesetUrl,
-  (newUrl: string, oldUrl: string | undefined) => {
-    if (newUrl && newUrl !== oldUrl) {
-      void loadTileset(newUrl);
-    }
+  (newUrl, oldUrl) => {
+    if (ready.value && newUrl && newUrl !== oldUrl) loadTileset(newUrl, true);
+    
+  }
+);
+
+watch(
+  ready,
+  (isReady) => {
+    if (isReady && props.tilesetUrl && !currentUrl.value) loadTileset(props.tilesetUrl, true)
   },
   { immediate: true }
 );
 
-// ============================================================================
-// Lifecycle
-// ============================================================================
-
-onMounted(() => {
-  initializeViewer();
-  if (props.tilesetUrl) {
-    void loadTileset(props.tilesetUrl);
-  }
-});
-
 onBeforeUnmount(() => {
-  if (viewer) {
-    viewer.destroy();
-    viewer = null;
-  }
+  if (urbisLayer) removeWMSLayer(urbisLayer);
+  if (currentUrl.value) removeTilesetByUrl(currentUrl.value);
 });
 </script>
-
-<template>
-  <div class="w-full h-full relative bg-black">
-    <div ref="viewerContainer" class="w-full h-full"></div>
-    <div class="absolute top-2.5 right-2.5 z-[100] bg-black/80 p-2.5 rounded">
-      <label class="flex items-center text-white text-sm cursor-pointer select-none">
-        <input
-          v-model="showWmsLayer"
-          type="checkbox"
-          class="mr-2 cursor-pointer"
-          @change="toggleWmsLayer"
-        />
-        <span class="cursor-pointer">UrbIS Base Map</span>
-      </label>
-    </div>
-    <div
-      v-if="loading"
-      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/80 px-4 py-2 rounded z-10"
-    >
-      Loading Tileset...
-    </div>
-    <div
-      v-if="error"
-      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-red-200 bg-black/80 px-4 py-2 rounded z-10"
-    >
-      {{ error }}
-    </div>
-  </div>
-</template>

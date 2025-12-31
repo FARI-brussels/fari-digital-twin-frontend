@@ -1,13 +1,97 @@
+<template>
+  <LibraryBase
+    title="Realtime Data"
+    item-type="dataset"
+    :viewer-component="RealtimeViewer"
+    :code-snippets="codeSnippets"
+    :items="[]"
+    :is-loading="false"
+    :error="null"
+    :static-items="realtimeDatasets"
+  >
+    <template #list-item="{ items, selectedItem, selectItem }">
+      <li
+        v-for="item in items"
+        :key="item.id"
+        class="group"
+      >
+        <button
+          class="w-full p-4 rounded-xl transition-all duration-200 text-left"
+          :class="[
+            selectedItem?.id === item.id
+              ? 'bg-gradient-to-r from-violet-500/15 to-violet-500/5 shadow-lg shadow-violet-500/10 ring-1 ring-violet-500/30'
+              : 'hover:bg-slate-100 dark:hover:bg-slate-800/50',
+          ]"
+          @click="selectItem(item)"
+        >
+          <div class="flex items-start gap-3">
+            <!-- Icon -->
+            <div
+              class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200"
+              :class="[
+                selectedItem?.id === item.id
+                  ? 'bg-gradient-to-br from-violet-500 to-violet-600 shadow-lg shadow-violet-500/30'
+                  : 'bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800',
+              ]"
+            >
+              <Radio
+                class="w-5 h-5 transition-colors duration-200"
+                :class="[
+                  selectedItem?.id === item.id
+                    ? 'text-white'
+                    : 'text-slate-500 dark:text-slate-400',
+                ]"
+              />
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+              <p
+                class="font-semibold truncate transition-colors duration-200"
+                :class="[
+                  selectedItem?.id === item.id
+                    ? 'text-violet-600 dark:text-violet-400'
+                    : 'text-slate-700 dark:text-slate-200',
+                ]"
+              >
+                {{ item.name }}
+              </p>
+              <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
+                {{ item.description }}
+              </p>
+
+              <!-- Badges -->
+              <div class="flex items-center gap-2 mt-2">
+                <span class="px-2 py-0.5 rounded-md text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  {{ (item as any).id }}
+                </span>
+                <span
+                  class="px-2 py-0.5 rounded-md text-xs font-medium"
+                  :class="[
+                    (item as any).type === 'mobility'
+                      ? 'bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400'
+                      : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400',
+                  ]"
+                >
+                  {{ (item as any).type === 'mobility' ? 'Mobility Twin' : 'Backend' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </button>
+      </li>
+    </template>
+  </LibraryBase>
+</template>
+
 <script setup lang="ts">
 import LibraryBase from '@/components/LibraryBase.vue';
 import RealtimeViewer from '@/components/RealtimeViewer.vue';
 import { MobilityEndpoints } from '@/api/mobilityClient';
 import { ComponentEndpoints } from '@/api/queries/components';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Radio } from 'lucide-vue-next';
 import type { RealtimeDataset, LibraryItem } from '@/types';
 
-// Transform mobility endpoints into datasets
 const mobilityDatasets: RealtimeDataset[] = Object.keys(MobilityEndpoints).map((key) => ({
   id: key,
   name: formatName(key),
@@ -16,7 +100,6 @@ const mobilityDatasets: RealtimeDataset[] = Object.keys(MobilityEndpoints).map((
   endpoint: MobilityEndpoints[key as keyof typeof MobilityEndpoints],
 }));
 
-// Transform backend component endpoints into datasets
 const componentDatasets: RealtimeDataset[] = Object.keys(ComponentEndpoints).map((key) => ({
   id: key,
   name: formatName(key),
@@ -25,21 +108,17 @@ const componentDatasets: RealtimeDataset[] = Object.keys(ComponentEndpoints).map
   endpoint: ComponentEndpoints[key as keyof typeof ComponentEndpoints],
 }));
 
-// Combine all datasets
 const realtimeDatasets: RealtimeDataset[] = [...mobilityDatasets, ...componentDatasets];
 
 function formatName(key: string): string {
-  // Convert camelCase to Title Case
   const result = key.replace(/([A-Z])/g, ' $1');
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
-// Helper to check source type
 function isMobilitySource(id: string): boolean {
   return id in MobilityEndpoints;
 }
 
-// Define code snippets generation
 const codeSnippets = {
   js: (item: LibraryItem) => {
     const dataset = item as unknown as RealtimeDataset;
@@ -98,62 +177,15 @@ export function use${dataset.name.replace(/\s/g, '')}() {
     if (isMobilitySource(dataset.id)) {
       return `// Unity C# Example - Mobility Twin API
 // Endpoint: https://api.mobilitytwin.brussels${dataset.endpoint}
-// Ensure you add the Authorization header with your Mobility Twin token`;
+
+// Ensure you add the Authorization header
+// with your Mobility Twin token`;
     }
     return `// Unity C# Example - Backend API
 // Endpoint: {BACKEND_URL}/${dataset.endpoint}
-// Ensure you add the Authorization header with your Keycloak token`;
-  }
+
+// Ensure you add the Authorization header
+// with your Keycloak token`;
+  },
 };
-
-// We don't need upload/delete for these system-defined endpoints
 </script>
-
-<template>
-  <LibraryBase
-    title="Realtime Data"
-    item-type="dataset"
-    :viewer-component="RealtimeViewer"
-    :code-snippets="codeSnippets"
-    :items="[]"
-    :is-loading="false"
-    :error="null"
-    :static-items="realtimeDatasets"
-  >
-    <template #list-item="{ items, selectedItem, selectItem }">
-      <li
-        v-for="item in items"
-        :key="item.id"
-        class="px-4 py-1"
-      >
-        <Card
-          :class="[
-            'cursor-pointer transition-all hover:bg-accent/50',
-            selectedItem?.id === item.id
-              ? 'ring-2 ring-primary bg-accent/30'
-              : 'hover:shadow-md',
-          ]"
-          @click="selectItem(item)"
-        >
-          <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ item.name }}</CardTitle>
-            <CardDescription class="line-clamp-2">{{ item.description }}</CardDescription>
-          </CardHeader>
-          <CardContent class="pt-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" class="font-mono text-xs">
-                {{ (item as any).id }}
-              </Badge>
-              <Badge
-                :variant="(item as any).type === 'mobility' ? 'default' : 'secondary'"
-              >
-                {{ (item as any).type === 'mobility' ? 'ULB Mobility Twin' : 'FARI Backend' }}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </li>
-    </template>
-  </LibraryBase>
-</template>
-

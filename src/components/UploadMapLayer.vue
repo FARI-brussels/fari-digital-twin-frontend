@@ -102,9 +102,6 @@ function isLayerAlreadyAdded(layerName: string): boolean {
   );
 }
 
-/**
- * Get count of already added layers
- */
 const alreadyAddedCount = computed(() => {
   if (!existingLayers.value || availableLayers.value.length === 0) return 0;
   const baseUrl = url.value.split('?')[0];
@@ -114,21 +111,12 @@ const alreadyAddedCount = computed(() => {
     )
   ).length;
 });
-
-// ============================================================================
-// Methods
-// ============================================================================
-
-/**
- * Parse WMS GetCapabilities XML to extract layer information
- */
 function parseCapabilities(xmlText: string): WMSLayer[] {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
 
   const layers: WMSLayer[] = [];
 
-  // Handle both WMS 1.1.1 and 1.3.0 namespaces
   const layerElements = xmlDoc.querySelectorAll('Layer > Layer');
 
   layerElements.forEach(layerEl => {

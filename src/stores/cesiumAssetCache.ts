@@ -10,11 +10,26 @@ export const useCesiumAssetCache = defineStore('cesiumAssetCache', () => {
   const modelPreloads = new Map<string, Promise<void>>()
 
   const preloadModel = async (url: string): Promise<void> => {
-    if (modelPreloads.has(url)) return modelPreloads.get(url)!
+    const existing = modelPreloads.get(url)
+    if (existing) return existing
 
-    const promise = Resource.fetchArrayBuffer({ url })
+    if (!Resource || !Resource.fetchArrayBuffer) {
+      throw new Error('Cesium Resource.fetchArrayBuffer is not available')
+    }
+
+    // Type assertion needed because Resource might be undefined at type-check time
+    const resource = Resource as NonNullable<typeof Resource>
+    const urlParam = { url } as { url: string }
+    const arrayBufferPromise = resource.fetchArrayBuffer(urlParam)
+    
+    if (!arrayBufferPromise) {
+      throw new Error('Failed to initiate fetch for model')
+    }
+    
+    const promise = arrayBufferPromise
       .then(() => {
         // Convert Promise<ArrayBuffer> to Promise<void> - result is not needed
+        return undefined
       })
       .catch((err) => {
         modelPreloads.delete(url)

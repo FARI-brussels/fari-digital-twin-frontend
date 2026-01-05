@@ -54,7 +54,7 @@ export function useTilesets(viewerRef: ShallowRef<Viewer | null>) {
   const { getToken } = useAuth();
   
   const tilesetLoading = ref(false);
-  const tilesetError = ref<string | null>(null);
+  const tilesetError = ref<unknown | null>(null);
 
   function positionCameraForTileset(
     viewer: Viewer, 
@@ -107,7 +107,7 @@ export function useTilesets(viewerRef: ShallowRef<Viewer | null>) {
       if (tileset.isDestroyed()) {
         console.warn('[useTilesets] Cached tileset was destroyed — removing from cache:', url);
         cache.removeTileset(url);
-        tileset = null;
+        tileset = undefined;
       } else {
         if (!viewer.scene.primitives.contains(tileset)) {
           viewer.scene.primitives.add(tileset);
@@ -183,7 +183,7 @@ export function useTilesets(viewerRef: ShallowRef<Viewer | null>) {
       return newTileset;
     } catch (err: unknown) {
       console.error('[useTilesets] Failed to load tileset:', url, err);
-      tilesetError.value = err?.message || 'Failed to load tileset';
+      tilesetError.value = err || 'Failed to load tileset';
       tilesetLoading.value = false;
       return null;
     }

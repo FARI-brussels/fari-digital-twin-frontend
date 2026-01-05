@@ -39,7 +39,8 @@ const CESIUM_STYLES: Record<string, CesiumLayerStyle> = {
   },
   telraam: {
     getLineColor: ({ properties }) => {
-      const count = properties.car ?? 0
+      const props = properties as Record<string, unknown>
+      const count = (props.car as number | undefined) ?? 0
       const [r, g, b] = getTrafficColor(count)
       return [r, g, b, 220]
     },
@@ -47,7 +48,8 @@ const CESIUM_STYLES: Record<string, CesiumLayerStyle> = {
   },
   sensorCommunity: {
     getFillColor: ({ properties }) => {
-      const pm25 = getPM25Value(properties.sensordatavalues)
+      const props = properties as Record<string, unknown>
+      const pm25 = getPM25Value(props.sensordatavalues as Array<{ value_type: string; value: string }> | undefined)
       return getAirQualityColor(pm25) // already returns [r,g,b,a]
     },
     pointRadiusScale: 1.2,
@@ -65,5 +67,5 @@ const CESIUM_STYLES: Record<string, CesiumLayerStyle> = {
 }
 
 export function getCesiumLayerStyle(sourceId: string): CesiumLayerStyle {
-  return CESIUM_STYLES[sourceId] ?? CESIUM_STYLES.default
+  return CESIUM_STYLES[sourceId] ?? CESIUM_STYLES.default!
 }

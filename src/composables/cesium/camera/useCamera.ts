@@ -17,7 +17,7 @@ const DEFAULT_VIEW: CesiumViewState = {
 
 export function useCamera(viewerRef: CesiumViewerRef) {
   // Track current heading for rotation controls
-  const currentHeading = ref(0);
+  const currentHeading = ref<number | undefined>(0);
   const initialViewState = ref<CesiumViewState>(DEFAULT_VIEW);
 
   /**
@@ -43,8 +43,8 @@ export function useCamera(viewerRef: CesiumViewerRef) {
     v.camera.setView({
       destination,
       orientation: {
-        heading: CesiumMath.toRadians(view.bearing),
-        pitch: CesiumMath.toRadians(view.pitch),
+        heading: view.bearing && CesiumMath.toRadians(view.bearing),
+        pitch: view.pitch && CesiumMath.toRadians(view.pitch),
         roll: 0,
       },
     });
@@ -67,8 +67,8 @@ export function useCamera(viewerRef: CesiumViewerRef) {
       destination,
       duration,
       orientation: {
-        heading: CesiumMath.toRadians(view.bearing),
-        pitch: CesiumMath.toRadians(view.pitch),
+        heading: view.bearing &&  CesiumMath.toRadians(view.bearing),
+        pitch: view.pitch && CesiumMath.toRadians(view.pitch),
         roll: 0,
       },
     });
@@ -89,9 +89,9 @@ export function useCamera(viewerRef: CesiumViewerRef) {
     v.camera.lookAt(
       position,
       new HeadingPitchRange(
-        CesiumMath.toRadians(currentHeading.value),
-        CesiumMath.toRadians(pitch),
-        distance
+        CesiumMath.toRadians(currentHeading.value ?? 0),
+        CesiumMath.toRadians(pitch ?? 0),
+        distance ?? 0
       )
     );
 
@@ -127,13 +127,15 @@ export function useCamera(viewerRef: CesiumViewerRef) {
     const v = viewerRef.value;
     if (!v?.camera) return;
 
-    currentHeading.value -= degrees;
+    currentHeading.value = currentHeading.value 
+    ? currentHeading.value - degrees 
+    : currentHeading.value;
 
     if (animate) {
       v.camera.flyTo({
         destination: v.camera.position,
         orientation: {
-          heading: CesiumMath.toRadians(currentHeading.value),
+          heading: CesiumMath.toRadians(currentHeading.value ?? 0),
           pitch: v.camera.pitch,
           roll: 0,
         },
@@ -143,7 +145,7 @@ export function useCamera(viewerRef: CesiumViewerRef) {
       v.camera.setView({
         destination: v.camera.position,
         orientation: {
-          heading: CesiumMath.toRadians(currentHeading.value),
+          heading: CesiumMath.toRadians(currentHeading.value ?? 0),
           pitch: v.camera.pitch,
           roll: 0,
         },
@@ -158,13 +160,13 @@ export function useCamera(viewerRef: CesiumViewerRef) {
     const v = viewerRef.value;
     if (!v?.camera) return;
 
-    currentHeading.value += degrees;
+    currentHeading.value = (currentHeading.value ?? 0) + degrees;
 
     if (animate) {
       v.camera.flyTo({
         destination: v.camera.position,
         orientation: {
-          heading: CesiumMath.toRadians(currentHeading.value),
+          heading: CesiumMath.toRadians(currentHeading.value ?? 0),
           pitch: v.camera.pitch,
           roll: 0,
         },
@@ -174,7 +176,7 @@ export function useCamera(viewerRef: CesiumViewerRef) {
       v.camera.setView({
         destination: v.camera.position,
         orientation: {
-          heading: CesiumMath.toRadians(currentHeading.value),
+          heading: CesiumMath.toRadians(currentHeading.value ?? 0),
           pitch: v.camera.pitch,
           roll: 0,
         },
@@ -201,8 +203,8 @@ export function useCamera(viewerRef: CesiumViewerRef) {
       destination,
       duration,
       orientation: {
-        heading: CesiumMath.toRadians(initialViewState.value.bearing),
-        pitch: CesiumMath.toRadians(initialViewState.value.pitch),
+        heading: CesiumMath.toRadians(initialViewState.value.bearing ?? 0),
+        pitch: CesiumMath.toRadians(initialViewState.value.pitch ?? 0),
         roll: 0,
       },
     });
@@ -266,7 +268,7 @@ export function useCamera(viewerRef: CesiumViewerRef) {
       latitude: CesiumMath.toDegrees(cartographic.latitude),
       altitude: cartographic.height,
       pitch: CesiumMath.toDegrees(v.camera.pitch),
-      bearing: CesiumMath.toDegrees(v.camera.heading),
+      bearing: CesiumMath.toDegrees(v.camera.heading) ?? 0,
     };
   };
 
@@ -278,7 +280,7 @@ export function useCamera(viewerRef: CesiumViewerRef) {
     const v = viewerRef.value;
     if (!v?.camera) return;
 
-    currentHeading.value = CesiumMath.toDegrees(v.camera.heading);
+    if(v.camera.heading) currentHeading.value =  CesiumMath.toDegrees(v.camera.heading);
   };
 
   return {

@@ -9,6 +9,7 @@ import {
   RequestScheduler,
   Math as CesiumMath,
   Cartesian3,
+  ShadowMode
 } from 'cesium'
 import type { CesiumViewerOptions, CesiumViewState } from '@/types/Cesium'
 import { useCesiumAssetCache } from '@/stores/cesiumAssetCache'
@@ -34,7 +35,7 @@ export function useViewer(options: CesiumViewerOptions) {
   const cache = useCesiumAssetCache()
   const ready = ref(false)
   const loading = ref(false)
-  const error = ref<string | null>(null)
+  const error = ref<unknown | null>(null)
 
   if (import.meta.env.VITE_CESIUM_ION_ACCESS_TOKEN) 
     Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_ACCESS_TOKEN
@@ -53,7 +54,7 @@ export function useViewer(options: CesiumViewerOptions) {
         maximumRenderTimeChange: Infinity,
         shadows: false,
         // geocoder: import.meta.env.VITE_CESIUM_ION_ACCESS_TOKEN,
-        terrainShadows: false,
+        terrainShadows: ShadowMode.DISABLED,
         animation: false,
         timeline: false,
         fullscreenButton: false,
@@ -110,26 +111,26 @@ export function useViewer(options: CesiumViewerOptions) {
       viewer.value.camera.setView({
         destination,
         orientation: {
-          heading: CesiumMath.toRadians(view.bearing),
-          pitch: CesiumMath.toRadians(view.pitch),
+          heading: view.bearing && CesiumMath.toRadians(view.bearing),
+          pitch: view.pitch && CesiumMath.toRadians(view.pitch),
           roll: 0,
         },
       })
 
       requestAnimationFrame(() => 
-        viewer.value.scene.requestRender()
+        viewer.value && viewer.value.scene.requestRender()
       )
 
       ready.value = true
     } catch (err: unknown) {
-      error.value = err.message || 'Failed to initialize Cesium'
+      error.value = err || 'Failed to initialize Cesium'
       console.error(err)
     } finally {
       loading.value = false
     }
   }
 
-  const setBasemap = (type: 'osm' | 'none' | unknown | null = 'osm') => {
+  const setBasemap = (type: 'osm' | 'none' | null = 'osm') => {
     if (!viewer.value) return
   
     const imageryLayers = viewer.value.imageryLayers

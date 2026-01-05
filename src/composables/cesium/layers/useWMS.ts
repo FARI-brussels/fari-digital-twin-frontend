@@ -9,7 +9,7 @@ export function useWMS(viewerRef: CesiumViewerRef) {
   const addWMSLayer = (
     url: string,
     layers: string,
-    options: WMSOptions = {}
+    options: WMSOptions = {},
   ): ImageryLayer | null => {
     const v = viewerRef.value
     if (!v) return null

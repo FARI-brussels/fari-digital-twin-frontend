@@ -1,4 +1,4 @@
-import { Entity, Cartesian3, Transforms, Math as CesiumMath } from 'cesium'
+import { Entity, Cartesian3, Transforms, Math as CesiumMath, HeadingPitchRoll } from 'cesium'
 import { markRaw } from 'vue'
 import { useCesiumAssetCache } from '@/stores/cesiumAssetCache'
 import { hashModel } from '@/composables/cesium/utils/hash'
@@ -35,11 +35,14 @@ export function use3DModels(viewerRef: CesiumViewerRef) {
 
     const entity = v.entities.add({
       position: posCart,
-      orientation: Transforms.headingPitchRollQuaternion(posCart, {
-        heading: CesiumMath.toRadians(options.rotation?.[2] ?? 0),
-        pitch: CesiumMath.toRadians(options.rotation?.[1] ?? 0),
-        roll: CesiumMath.toRadians(options.rotation?.[0] ?? 0),
-      }),
+      orientation: Transforms.headingPitchRollQuaternion(
+        posCart,
+        new HeadingPitchRoll(
+          CesiumMath.toRadians(options.rotation?.[2] ?? 0),
+          CesiumMath.toRadians(options.rotation?.[1] ?? 0),
+          CesiumMath.toRadians(options.rotation?.[0] ?? 0)
+        )
+      ),
       model: {
         uri: url,
         scale: options.scale ?? 1,

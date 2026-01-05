@@ -2,7 +2,7 @@
  * Central type definitions for the Digital Twin Frontend
  */
 
-import type { Component } from 'vue';
+import type { Component, FunctionalComponent } from 'vue';
 
 // ============================================================================
 // API Response Types
@@ -134,6 +134,12 @@ export interface DemoExample {
   name: string;
   description: string;
   layers: ExampleLayer[];
+  theme: {
+    gradient: string;
+    textColor: string;
+    borderColor: string;
+    icon: FunctionalComponent
+  }
 }
 
 // ============================================================================

@@ -4,6 +4,8 @@ import type { GeoJSONFeatureCollection } from '@/types'
 import {
   GeoJsonDataSource,
   Color,
+  ColorMaterialProperty,
+  ConstantProperty,
   BillboardGraphics,
   VerticalOrigin,
   NearFarScalar,
@@ -235,9 +237,9 @@ export function useRealtimeData(viewerRef: CesiumViewerRef) {
         if (entity.polyline && sourceId === 'telraam') {
           const carCount = Number(props.car ?? 0)
           const [r, g, b] = getTrafficColor(carCount)
-          entity.polyline.material = Color.fromBytes(r, g, b, 240)
+          entity.polyline.material = new ColorMaterialProperty(Color.fromBytes(r, g, b, 240))
           
-          entity.polyline.width = getPolylineWidth()
+          entity.polyline.width = new ConstantProperty(getPolylineWidth())
           
           return
         }
@@ -253,10 +255,10 @@ export function useRealtimeData(viewerRef: CesiumViewerRef) {
 
           const fillArray = Array.isArray(fill) ? fill : [255, 255, 0, 80]
           const [r, g, b, a = 80] = fillArray as [number, number, number, number?]
-          entity.polygon.material = Color.fromBytes(r, g, b, a)
-          entity.polygon.outline = true
-          entity.polygon.outlineColor = Color.WHITE
-          entity.polygon.outlineWidth = 2
+          entity.polygon.material = new ColorMaterialProperty(Color.fromBytes(r, g, b, a))
+          entity.polygon.outline = new ConstantProperty(true)
+          entity.polygon.outlineColor = new ConstantProperty(Color.WHITE)
+          entity.polygon.outlineWidth = new ConstantProperty(2)
         }
       })
     } finally {
@@ -345,7 +347,7 @@ export function useRealtimeData(viewerRef: CesiumViewerRef) {
         const entities = dataSource.entities.values
         entities.forEach(entity => {
           if (entity.polyline) {
-            entity.polyline.width = width
+            entity.polyline.width = new ConstantProperty(width)
           }
         })
         

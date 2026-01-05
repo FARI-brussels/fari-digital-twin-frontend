@@ -27,6 +27,10 @@ export interface WMSOptions {
   opacity?: number;
   brightness?: number;
   contrast?: number;
+  maximumLevel?: number,
+  tileWidth?: number,
+  tileHeight?: number,
+  parameters?: Record<string, string | number | boolean>
 }
 
 export interface GeoJsonOptions {

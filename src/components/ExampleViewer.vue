@@ -180,7 +180,7 @@ import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useCesiumViewer } from '@/composables/cesium';
 import { ViewerControls } from '@/components/ui/viewer-controls';
 import type { DemoExample, ExampleLayer } from '@/types';
-import { ImageryLayer, Cesium3DTileset } from 'cesium';
+import { ImageryLayer } from 'cesium';
 import { 
   X, 
   ChevronDown, 
@@ -195,8 +195,8 @@ import {
 const props = defineProps<{ example: DemoExample }>();
 const emit = defineEmits<{ close: [] }>();
 
-const wrapperRef = ref<HTMLElement | null>(null);
-const containerRef = ref<HTMLElement | null>(null);
+const wrapperRef = ref<HTMLDivElement | null>(null);
+const containerRef = ref<HTMLDivElement | null>(null);
 const loadError = ref<string | null>(null);
 const showLayers = ref(true);
 const loadedLayers = ref<Set<string>>(new Set());

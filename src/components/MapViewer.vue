@@ -53,7 +53,7 @@ import type { MapLayer } from '@/types';
 
 const props = defineProps<{ mapLayer: MapLayer | null }>();
 
-const wrapperRef = ref<HTMLElement | null>(null);
+const wrapperRef = ref<HTMLDivElement | null>(null);
 const containerRef = ref<HTMLDivElement | null>(null);
 
 const {
@@ -79,7 +79,7 @@ const {
   },
 });
 
-let currentLayer: any = null;
+let currentLayer: unknown = null;
 
 const legendUrl = computed(() => {
   const l = props.mapLayer;

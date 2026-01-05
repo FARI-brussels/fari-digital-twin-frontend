@@ -59,8 +59,8 @@ const {
   cameraPitch?: number;
 }>();
 
-const wrapperRef = ref<HTMLElement | null>(null);
-const containerRef = ref<HTMLElement | null>(null);
+const wrapperRef = ref<HTMLDivElement | null>(null);
+const containerRef = ref<HTMLDivElement | null>(null);
 
 const {
   viewer,

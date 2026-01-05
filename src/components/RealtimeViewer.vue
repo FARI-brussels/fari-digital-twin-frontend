@@ -110,7 +110,6 @@ import { MapLegend } from '@/components/ui/map-legend';
 import { Loader2, MapPin, Radio, X } from 'lucide-vue-next';
 import type { RealtimeDataset } from '@/types';
 import { getLayerStyle } from '@/lib/layerStyles';
-import type { Legend } from '@/components/ui/map-legend/MapLegend.vue';
 
 interface SelectedFeatureData {
   id: string;
@@ -121,8 +120,8 @@ const props = defineProps<{
   dataset?: RealtimeDataset;
 }>();
 
-const wrapperRef = ref<HTMLElement | null>(null);
-const containerRef = ref<HTMLElement | null>(null);
+const wrapperRef = ref<HTMLDivElement | null>(null);
+const containerRef = ref<HTMLDivElement | null>(null);
 const selectedFeature = ref<SelectedFeatureData | null>(null);
 const dataLoading = ref(false);
 const currentDatasetId = ref<string | null>(null);

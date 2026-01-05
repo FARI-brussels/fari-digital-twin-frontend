@@ -84,8 +84,8 @@ import type { Cesium3DTileset } from 'cesium';
 
 const props = defineProps<{ tilesetUrl: string }>();
 
-const wrapperRef = ref<HTMLElement | null>(null);
-const containerRef = ref<HTMLElement | null>(null);
+const wrapperRef = ref<HTMLDivElement | null>(null);
+const containerRef = ref<HTMLDivElement | null>(null);
 
 const {
   viewer,

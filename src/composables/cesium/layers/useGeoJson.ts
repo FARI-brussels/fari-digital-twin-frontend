@@ -1,6 +1,6 @@
 import type { ShallowRef } from 'vue'
 import type { Viewer } from 'cesium'
-import { GeoJsonDataSource } from 'cesium'
+import { GeoJsonDataSource, Color } from 'cesium'
 
 export function useGeoJson(viewerRef: ShallowRef<Viewer | null>) {
   const addGeoJson = async (

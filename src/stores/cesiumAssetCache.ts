@@ -1,5 +1,3 @@
-// src/stores/cesiumAssetCache.ts
-
 import { defineStore } from 'pinia'
 import {
   Resource,
@@ -17,7 +15,6 @@ export const useCesiumAssetCache = defineStore('cesiumAssetCache', () => {
     const promise = Resource.fetchArrayBuffer({ url })
       .then(() => {
         // Convert Promise<ArrayBuffer> to Promise<void> - result is not needed
-        return undefined
       })
       .catch((err) => {
         modelPreloads.delete(url)
@@ -77,22 +74,10 @@ export const useCesiumAssetCache = defineStore('cesiumAssetCache', () => {
   const tilesetInstances = new Map<string, Cesium3DTileset>()
 
   const cacheTileset = (url: string, tileset: Cesium3DTileset): void => {
-    if (!tilesetInstances.has(url)) {
-      tilesetInstances.set(url, tileset)
-    }
+    if (!tilesetInstances.has(url)) tilesetInstances.set(url, tileset)
   }
 
-  const getCachedTileset = (url: string): Cesium3DTileset | undefined => {
-    return tilesetInstances.get(url)
-  }
-
-  // const removeTileset = (url: string): void => {
-  //   const tileset = tilesetInstances.get(url)
-  //   // if (tileset && !tileset.isDestroyed()) {
-  //   //   // tileset.destroy()
-  //   // }
-  //   tilesetInstances.delete(url)
-  // }
+  const getCachedTileset = (url: string): Cesium3DTileset | undefined => tilesetInstances.get(url)
 
   const removeTileset = (url: string): void => {
     // Only remove from cache — DO NOT DESTROY

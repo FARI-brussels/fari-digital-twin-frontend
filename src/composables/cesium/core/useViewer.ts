@@ -9,8 +9,6 @@ import {
   RequestScheduler,
   Math as CesiumMath,
   Cartesian3,
-  // Terrain,
-  // CesiumTerrainProvider
 } from 'cesium'
 import type { CesiumViewerOptions, CesiumViewState } from '@/types/Cesium'
 import { useCesiumAssetCache } from '@/stores/cesiumAssetCache'
@@ -123,7 +121,7 @@ export function useViewer(options: CesiumViewerOptions) {
       )
 
       ready.value = true
-    } catch (err: any) {
+    } catch (err: unknown) {
       error.value = err.message || 'Failed to initialize Cesium'
       console.error(err)
     } finally {

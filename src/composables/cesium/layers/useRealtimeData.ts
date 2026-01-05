@@ -212,7 +212,7 @@ export function useRealtimeData(viewerRef: CesiumViewerRef) {
             }
           }
           else if (Array.isArray(style.getFillColor)) {
-            const [r, g, b, a = 200] = style.getFillColor as any
+            const [r, g, b, a = 200] = style.getFillColor
             fillColor = Color.fromBytes(r, g, b, a)
           }
 

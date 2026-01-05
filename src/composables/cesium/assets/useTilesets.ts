@@ -1,4 +1,3 @@
-// src/composables/cesium/assets/useTilesets.ts
 import { ref } from 'vue';
 import type { ShallowRef } from 'vue';
 import type { Viewer, Resource } from 'cesium';
@@ -182,7 +181,7 @@ export function useTilesets(viewerRef: ShallowRef<Viewer | null>) {
       viewer.scene.requestRender();
       tilesetLoading.value = false;
       return newTileset;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[useTilesets] Failed to load tileset:', url, err);
       tilesetError.value = err?.message || 'Failed to load tileset';
       tilesetLoading.value = false;

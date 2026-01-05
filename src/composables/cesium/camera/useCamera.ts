@@ -1,13 +1,9 @@
-// src/composables/cesium/camera/useCamera.ts
 import { ref } from 'vue';
 import { 
   Cartesian3, 
   Matrix4, 
   Math as CesiumMath, 
   HeadingPitchRange,
-  ScreenSpaceEventHandler,
-  ScreenSpaceEventType,
-  defined,
 } from 'cesium';
 import type { CesiumViewState, CesiumViewerRef } from '@/types/Cesium';
 

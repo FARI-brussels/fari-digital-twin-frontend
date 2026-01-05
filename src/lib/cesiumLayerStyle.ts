@@ -1,5 +1,4 @@
-// Reuse your existing color logic!
-import { getValueColor, getTrafficColor, getAirQualityColor, getPM25Value } from '@/lib/layerStyles'
+import { getTrafficColor, getAirQualityColor, getPM25Value } from '@/lib/layerStyles'
 
 export interface CesiumLayerStyle {
   useCustomIcon?: boolean
@@ -7,8 +6,8 @@ export interface CesiumLayerStyle {
   iconSize?: number
   iconColor?: [number, number, number, number?]
 
-  getFillColor?: (feature: { properties: any }) => [number, number, number, number?]
-  getLineColor?: (feature: { properties: any }) => [number, number, number, number?]
+  getFillColor?: (feature: { properties: unknown }) => [number, number, number, number?]
+  getLineColor?: (feature: { properties: unknown }) => [number, number, number, number?]
   getLineWidth?: number
   pointRadiusScale?: number
 }

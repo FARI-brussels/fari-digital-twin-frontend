@@ -1,5 +1,5 @@
 import type { Ref, ShallowRef } from 'vue';
-import { Viewer, ImageryLayer } from 'cesium';
+import { Viewer, ImageryLayer, Entity, Cesium3DTileset } from 'cesium';
 
 export const DEFAULT_VIEW_STATE: CesiumViewState = {
   longitude: 4.3517,

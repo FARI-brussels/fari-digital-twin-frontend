@@ -50,6 +50,8 @@ import { ViewerControls } from '@/components/ui/viewer-controls';
 import { MapLegend } from '@/components/ui/map-legend';
 import { Loader2 } from 'lucide-vue-next';
 import type { MapLayer } from '@/types';
+import type {  ImageryLayer } from 'cesium'
+
 
 const props = defineProps<{ mapLayer: MapLayer | null }>();
 
@@ -79,7 +81,7 @@ const {
   },
 });
 
-let currentLayer: unknown = null;
+let currentLayer: ImageryLayer | null = null;
 
 const legendUrl = computed(() => {
   const l = props.mapLayer;

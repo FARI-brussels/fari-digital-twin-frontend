@@ -43,7 +43,7 @@
 
     <div class="absolute bottom-20 right-4 z-10 pointer-events-auto">
       <MapLegend 
-        :legend="legendData"
+        v-bind="legendData"
         :show-icon="true"
       />
     </div>
@@ -104,7 +104,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onBeforeUnmount } from 'vue';
 import { useCesiumViewer } from '@/composables/cesium';
-import { ScreenSpaceEventHandler, ScreenSpaceEventType, defined } from 'cesium';
+import { ScreenSpaceEventHandler, ScreenSpaceEventType, defined, Cartesian2 } from 'cesium';
 import { ViewerControls } from '@/components/ui/viewer-controls';
 import { MapLegend } from '@/components/ui/map-legend';
 import { Loader2, MapPin, Radio, X } from 'lucide-vue-next';
@@ -158,7 +158,7 @@ const legendData = computed(() => {
   
   return {
     title: 'Legend',
-    items: style.legend,
+    items: Array.isArray(style.legend) ?  style.legend : [style.legend],
   };
 });
 
@@ -177,7 +177,8 @@ const setupClickHandler = (): void => {
   clickHandler = new ScreenSpaceEventHandler(viewer.value.scene.canvas);
 
   clickHandler.setInputAction((movement: { position: { x: number; y: number } }) => {
-    const pickedObject = viewer.value?.scene.pick(movement.position);
+    const position = new Cartesian2(movement.position.x, movement.position.y);
+    const pickedObject = viewer.value?.scene.pick(position);
 
     if (defined(pickedObject) && defined(pickedObject.id)) {
       const entity = pickedObject.id;

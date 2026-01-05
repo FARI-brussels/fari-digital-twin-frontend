@@ -40,6 +40,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useCesiumViewer } from '@/composables/cesium';
 import { Cartesian3, Matrix4 } from 'cesium';
+import type { Entity } from 'cesium'
 import { ViewerControls } from '@/components/ui/viewer-controls';
 import { Loader2 } from 'lucide-vue-next';
 
@@ -85,7 +86,7 @@ const {
   },
 });
 
-const currentEntity = ref<unknown>(null);
+const currentEntity = ref<Entity | null>(null);
 const modelLoading = ref(false);
 
 const isLoading = computed(() => viewerLoading.value || modelLoading.value);

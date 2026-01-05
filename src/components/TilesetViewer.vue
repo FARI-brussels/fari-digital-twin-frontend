@@ -81,6 +81,7 @@ import { useCesiumViewer } from '@/composables/cesium';
 import { ViewerControls } from '@/components/ui/viewer-controls';
 import { Loader2, AlertCircle, Map } from 'lucide-vue-next';
 import type { Cesium3DTileset } from 'cesium';
+import type {  ImageryLayer } from 'cesium'
 
 const props = defineProps<{ tilesetUrl: string }>();
 
@@ -115,11 +116,11 @@ const {
 
 const showWmsLayer = ref(true);
 const tilesetLoading = ref(false);
-const tilesetError = ref<string | null>(null);
+const tilesetError = ref<unknown | null>(null);
 const currentUrl = ref<string | null>(null);
 const currentTileset = ref<Cesium3DTileset | null>(null);
 
-let urbisLayer: unknown = null;
+let urbisLayer: ImageryLayer | null = null;
 
 onMounted(() => {
   watch(ready, (isReady) => {
@@ -198,7 +199,7 @@ async function loadTileset(url: string, shouldZoom = true) {
     currentUrl.value = url;
   } catch (err: unknown) {
     console.error('[TilesetViewer] Load failed:', err);
-    tilesetError.value = err?.message || 'Could not load 3D tileset. It may be private or invalid.';
+    tilesetError.value = err || 'Could not load 3D tileset. It may be private or invalid.';
     currentTileset.value = null;
     currentUrl.value = null;
   } finally {

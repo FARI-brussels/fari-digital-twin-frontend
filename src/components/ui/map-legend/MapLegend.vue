@@ -63,7 +63,13 @@ export interface Legend {
 
 const props = withDefaults(
   defineProps<{
-    legend?: Legend | null;
+    legend?: {
+      title: string; 
+      items: {
+        color: string;
+        label: string;
+      }[]
+    } | null;
     imageSrc?: string;
     imageAlt?: string;
     title?: string;

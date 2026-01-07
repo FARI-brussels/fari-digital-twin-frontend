@@ -55,7 +55,12 @@ export interface CesiumViewerOptions {
   container: Ref<HTMLElement | null>;
   initialViewState?: Partial<CesiumViewState>;
   enableOSMBuildings?: boolean;
-  enableTerrain?: boolean;
+  /** Enable Cesium World Terrain (Cesium's default global terrain) */
+  enableCesiumTerrain?: boolean;
+  /** Enable custom terrain from Cesium Ion asset ID */
+  enableCustomTerrain?: boolean;
+  /** Custom Cesium Ion terrain asset ID (default: 3340034) */
+  customTerrainAssetId?: number;
   timeline?: boolean;
   animation?: boolean;
   baseLayerPicker?: boolean;

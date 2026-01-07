@@ -221,11 +221,43 @@ function handleReset() {
   }
 }
 
-watch(
-  () => props.tilesetUrl,
-  (newUrl, oldUrl) => {
-    if (ready.value && newUrl && newUrl !== oldUrl) loadTileset(newUrl, true);
-    
+async function loadTileset(url: string): Promise<void> {
+  if (!viewer || !url) return;
+
+  loading.value = true;
+  error.value = null;
+
+  try {
+    if (currentTileset) {
+      viewer.scene.primitives.remove(currentTileset);
+    }
+
+    // For external URLs (OVH S3), don't send Authorization header
+    // OVH interprets it as AWS auth request and fails
+    const isExternalUrl = url.startsWith('http://') || url.startsWith('https://');
+
+    let resource: Cesium.Resource;
+    if (isExternalUrl) {
+      // External URL (OVH) - no auth headers needed, files are public
+      resource = new Cesium.Resource({ url });
+    } else {
+      // Internal URL (our API) - include auth token
+      const token = await getToken();
+      resource = new Cesium.Resource({
+        url,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+    }
+
+    const tileset = await Cesium.Cesium3DTileset.fromUrl(resource);
+    currentTileset = viewer.scene.primitives.add(tileset) as Cesium.Cesium3DTileset;
+
+    await viewer.zoomTo(tileset);
+  } catch (err) {
+    console.error('Failed to load tileset:', err);
+    error.value = 'Error loading tileset. The URL might be invalid or inaccessible.';
+  } finally {
+    loading.value = false;
   }
 );
 

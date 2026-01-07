@@ -126,10 +126,10 @@ const examples = ref<ThemedExample[]>([
     ],
   },
   {
-    id: 'urban-green-spaces',
-    name: 'Urban Green Spaces',
+    id: 'urban-heat-island',
+    name: 'Urban Heat Island',
     description:
-      'Explore the green infrastructure of Brussels including trees, parks, and the Green Walk route with detailed 3D vegetation.',
+      'Explore the urban heat island of Brussels including buildings, trees, and the Green Walk route with detailed 3D vegetation.',
     theme: {
       gradient: 'bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500',
       icon: TreePine,
@@ -141,7 +141,7 @@ const examples = ref<ThemedExample[]>([
       { id: 'buildings', name: 'Buildings', type: 'tileset', url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-30-52/tileset.json', enabled: true },
       { id: 'trees', name: 'Trees', type: 'tileset', url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-24-12/tiles/tileset.json', enabled: true },
       { id: 'trees_jette', name: 'Jette Trees', type: 'tileset', url: 'https://digitaltwin.s3.gra.io.cloud.ovh.net/tileset_manager/2025-08-18_12-27-59/tiles/tileset.json', enabled: true },
-      { id: 'greenway', name: 'Green Walk', type: 'wms', url: 'https://wms.environnement.brussels/be_wms', layer: 'bruenvi_greenway', enabled: true },
+      { id: 'heat-island', name: 'Heat Island', type: 'wms', url: 'https://ows.environnement.brussels/air?', layer: 'urban_heat_islands', enabled: true },
     ],
   },
   {

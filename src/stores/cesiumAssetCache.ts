@@ -73,9 +73,11 @@ export const useCesiumAssetCache = defineStore('cesiumAssetCache', () => {
       const provider = new WebMapServiceImageryProvider({
         url,
         layers,
+        crs: 'CRS:84', // Use CRS:84 which has lon/lat axis order (compatible with Cesium's BBOX)
         parameters: {
           transparent: true,
           format: 'image/png',
+          version: '1.3.0', // Force WMS 1.3.0 to use CRS parameter instead of SRS
           ...userParameters,
         },
       })

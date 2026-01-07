@@ -4,6 +4,7 @@ import './style.css';
 import App from './App.vue';
 import router from './router';
 import { vueKeycloak } from '@josempgon/vue-keycloak';
+import { createPinia } from "pinia";
 
 // Keycloak configuration from environment variables
 const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL;
@@ -19,10 +20,12 @@ if (!keycloakUrl || !keycloakRealm || !keycloakClientId) {
   });
 }
 
+const pinia = createPinia();
 const app = createApp(App);
 
 app
   .use(router)
+  .use(pinia)
   .use(VueQueryPlugin, {
     queryClientConfig: {
       defaultOptions: {

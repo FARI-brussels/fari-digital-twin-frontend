@@ -196,3 +196,15 @@
     text-wrap: balance;
   }
 }
+
+:deep(.cesium-viewer-bottom),
+:deep(.cesium-widget-credits),
+:deep(.cesium-viewer-toolbar),
+:deep(.cesium-viewer-animationContainer),
+:deep(.cesium-viewer-timelineContainer) {
+  display: none !important;
+}
+
+:deep(.cesium-widget-credits) {
+  display: none !important;
+}

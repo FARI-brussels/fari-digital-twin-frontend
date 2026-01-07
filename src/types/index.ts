@@ -2,7 +2,7 @@
  * Central type definitions for the Digital Twin Frontend
  */
 
-import type { Component } from 'vue';
+import type { Component, FunctionalComponent } from 'vue';
 
 // ============================================================================
 // API Response Types
@@ -134,6 +134,12 @@ export interface DemoExample {
   name: string;
   description: string;
   layers: ExampleLayer[];
+  theme: {
+    gradient: string;
+    textColor: string;
+    borderColor: string;
+    icon: FunctionalComponent
+  }
 }
 
 // ============================================================================
@@ -202,43 +208,3 @@ export interface KeycloakInstance {
   updateToken: (minValidity: number) => Promise<boolean>;
 }
 
-// ============================================================================
-// Cesium Types (Minimal declarations for type safety)
-// ============================================================================
-
-export interface CesiumViewerOptions {
-  timeline?: boolean;
-  animation?: boolean;
-  baseLayerPicker?: boolean;
-  geocoder?: boolean;
-  homeButton?: boolean;
-  sceneModePicker?: boolean;
-  navigationHelpButton?: boolean;
-  infoBox?: boolean;
-  selectionIndicator?: boolean;
-  fullscreenButton?: boolean;
-  terrainProvider?: unknown;
-  imageryProvider?: unknown;
-  terrain?: unknown;
-  sceneMode?: unknown;
-}
-
-// ============================================================================
-// Environment Variables
-// ============================================================================
-
-export interface ImportMetaEnv {
-  readonly VITE_BACKEND_URL: string;
-  readonly VITE_KEYCLOAK_URL: string;
-  readonly VITE_KEYCLOAK_REALM: string;
-  readonly VITE_KEYCLOAK_CLIENT_ID: string;
-  readonly VITE_KEYCLOAK_REDIRECT_PATH?: string;
-  readonly VITE_KEYCLOAK_LOGOUT_REDIRECT_PATH?: string;
-  readonly VITE_KEYCLOAK_SILENT_CHECK_PATH?: string;
-  readonly VITE_TWIN_API_TOKEN?: string;
-  readonly VITE_CESIUM_ION_TOKEN?: string;
-}
-
-export interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}

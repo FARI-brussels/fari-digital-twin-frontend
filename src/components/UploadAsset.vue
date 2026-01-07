@@ -1,132 +1,6 @@
-<script setup lang="ts">
-/**
- * UploadAsset - Upload form for 3D assets (glTF, glb, etc.)
- * Designed to be used inside a Dialog
- */
-import { ref, computed } from 'vue';
-import { useAuth } from '@/composables/useAuth';
-import { useUploadAssetMutation } from '@/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import LoginPrompt from '@/components/LoginPrompt.vue';
-import { Upload, FileUp, X, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-
-// ============================================================================
-// Emits
-// ============================================================================
-
-const emit = defineEmits<{
-  uploaded: [];
-  cancel: [];
-}>();
-
-// ============================================================================
-// Auth
-// ============================================================================
-
-const { isAuthenticated, canWrite } = useAuth();
-
-// ============================================================================
-// State
-// ============================================================================
-
-const file = ref<File | null>(null);
-const description = ref('');
-const source = ref('');
-const successMessage = ref('');
-const fileInputRef = ref<HTMLInputElement | null>(null);
-const isDragging = ref(false);
-
-// ============================================================================
-// Mutation
-// ============================================================================
-
-const uploadMutation = useUploadAssetMutation();
-
-const error = computed(() => {
-  if (uploadMutation.error.value) {
-    return 'Failed to upload asset. Please try again.';
-  }
-  return null;
-});
-
-const uploading = computed(() => uploadMutation.isPending.value);
-
-// ============================================================================
-// Methods
-// ============================================================================
-
-function handleFileChange(event: Event): void {
-  const target = event.target as HTMLInputElement;
-  file.value = target.files?.[0] ?? null;
-  successMessage.value = '';
-  uploadMutation.reset();
-}
-
-function handleDrop(event: DragEvent): void {
-  isDragging.value = false;
-  const droppedFile = event.dataTransfer?.files?.[0];
-  if (droppedFile) {
-    file.value = droppedFile;
-    successMessage.value = '';
-    uploadMutation.reset();
-  }
-}
-
-function handleDragOver(event: DragEvent): void {
-  event.preventDefault();
-  isDragging.value = true;
-}
-
-function handleDragLeave(): void {
-  isDragging.value = false;
-}
-
-function clearFile(): void {
-  file.value = null;
-  if (fileInputRef.value) {
-    fileInputRef.value.value = '';
-  }
-}
-
-async function uploadAsset(): Promise<void> {
-  if (!file.value || !description.value || !source.value || !canWrite.value) {
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append('file', file.value);
-  formData.append('description', description.value);
-  formData.append('source', source.value);
-
-  successMessage.value = '';
-
-  try {
-    await uploadMutation.mutateAsync(formData);
-    successMessage.value = 'Asset uploaded successfully!';
-    description.value = '';
-    source.value = '';
-    clearFile();
-
-    setTimeout(() => {
-      emit('uploaded');
-    }, 1500);
-  } catch {
-    // Error is handled by the mutation
-  }
-}
-
-function handleCancel(): void {
-  emit('cancel');
-}
-</script>
 
 <template>
   <div class="w-full">
-    <!-- Auth check -->
     <LoginPrompt
       v-if="!isAuthenticated"
       action="upload assets"
@@ -134,9 +8,7 @@ function handleCancel(): void {
       description="Create an account or sign in to upload 3D models and assets to the library."
     />
 
-    <!-- Upload form (authenticated) -->
     <div v-else>
-      <!-- Header -->
       <div class="flex items-center gap-3 mb-2">
         <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
           <Upload class="h-5 w-5 text-primary" />
@@ -150,7 +22,6 @@ function handleCancel(): void {
       <Separator class="my-4" />
 
       <form class="space-y-5" @submit.prevent="uploadAsset">
-        <!-- Drag & Drop Zone -->
         <div
           class="relative rounded-lg border-2 border-dashed transition-colors"
           :class="[
@@ -205,7 +76,6 @@ function handleCancel(): void {
           </div>
         </div>
 
-        <!-- Description -->
         <div class="space-y-2">
           <Label for="description">
             Description <span class="text-destructive">*</span>
@@ -218,7 +88,6 @@ function handleCancel(): void {
           />
         </div>
 
-        <!-- Source URL -->
         <div class="space-y-2">
           <Label for="source">
             Source URL <span class="text-destructive">*</span>
@@ -235,7 +104,6 @@ function handleCancel(): void {
           </p>
         </div>
 
-        <!-- Error Message -->
         <div
           v-if="error"
           class="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-destructive"
@@ -244,7 +112,6 @@ function handleCancel(): void {
           <span class="text-sm">{{ error }}</span>
         </div>
 
-        <!-- Success Message -->
         <div
           v-if="successMessage"
           class="flex items-center gap-2 rounded-lg border border-secondary/20 bg-secondary/10 px-4 py-3 text-secondary-foreground"
@@ -255,7 +122,6 @@ function handleCancel(): void {
 
         <Separator />
 
-        <!-- Actions -->
         <div class="flex justify-end gap-3">
           <Button type="button" variant="outline" @click="handleCancel">
             Cancel
@@ -272,3 +138,110 @@ function handleCancel(): void {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useAuth } from '@/composables/useAuth';
+import { useUploadAssetMutation } from '@/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import LoginPrompt from '@/components/LoginPrompt.vue';
+import { Upload, FileUp, X, CheckCircle2, AlertCircle } from 'lucide-vue-next';
+
+
+const emit = defineEmits<{
+  uploaded: [];
+  cancel: [];
+}>();
+
+
+const { isAuthenticated, canWrite } = useAuth();
+
+
+const file = ref<File | null>(null);
+const description = ref('');
+const source = ref('');
+const successMessage = ref('');
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const isDragging = ref(false);
+
+
+const uploadMutation = useUploadAssetMutation();
+
+const error = computed(() => {
+  if (uploadMutation.error.value) {
+    return 'Failed to upload asset. Please try again.';
+  }
+  return null;
+});
+
+const uploading = computed(() => uploadMutation.isPending.value);
+
+function handleFileChange(event: globalThis.Event): void {
+  const target = event.target as HTMLInputElement;
+  file.value = target.files?.[0] ?? null;
+  successMessage.value = '';
+  uploadMutation.reset();
+}
+
+function handleDrop(event: globalThis.DragEvent): void {
+  isDragging.value = false;
+  const droppedFile = event.dataTransfer?.files?.[0];
+  if (droppedFile) {
+    file.value = droppedFile;
+    successMessage.value = '';
+    uploadMutation.reset();
+  }
+}
+
+function handleDragOver(event: globalThis.DragEvent): void {
+  event.preventDefault();
+  isDragging.value = true;
+}
+
+function handleDragLeave(): void {
+  isDragging.value = false;
+}
+
+function clearFile(): void {
+  file.value = null;
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+}
+
+async function uploadAsset(): Promise<void> {
+  if (!file.value || !description.value || !source.value || !canWrite.value) {
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file.value);
+  formData.append('description', description.value);
+  formData.append('source', source.value);
+
+  successMessage.value = '';
+
+  try {
+    await uploadMutation.mutateAsync(formData);
+    successMessage.value = 'Asset uploaded successfully!';
+    description.value = '';
+    source.value = '';
+    clearFile();
+
+    setTimeout(() => {
+      emit('uploaded');
+    }, 1500);
+  } catch {
+    // Error is handled by the mutation
+  }
+}
+
+function handleCancel(): void {
+  emit('cancel');
+}
+</script>
+

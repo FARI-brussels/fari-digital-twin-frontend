@@ -115,6 +115,7 @@ export function getValueColor(
   alpha?: number
 ): [number, number, number] | [number, number, number, number] {
   const normalizedValue = (value - min) / (max - min);
+
   return getGradientColor(normalizedValue, alpha);
 }
 
@@ -123,21 +124,23 @@ const TRAFFIC_MIN = 0;
 const TRAFFIC_MAX = 500;
 
 // Helper for Telraam color scale
-function getTrafficColor(carCount: number): [number, number, number] {
+export function getTrafficColor(carCount: number): [number, number, number] {
   return getValueColor(carCount, TRAFFIC_MIN, TRAFFIC_MAX) as [number, number, number];
 }
 
 // Air quality thresholds for sensor community (PM2.5)
 const PM25_MIN = 0;
+// const PM25_MAX = 300;
 const PM25_MAX = 55;
 
 // Helper for air quality color scale (PM2.5 based)
-function getAirQualityColor(pm25: number): [number, number, number, number] {
+export function getAirQualityColor(pm25: number): [number, number, number, number] {
+
   return getValueColor(pm25, PM25_MIN, PM25_MAX, 220) as [number, number, number, number];
 }
 
 // Extract PM2.5 value from sensor community data
-function getPM25Value(sensordatavalues: Array<{ value_type: string; value: string }> | undefined): number {
+export function getPM25Value(sensordatavalues: Array<{ value_type: string; value: string }> | undefined): number {
   if (!sensordatavalues) return 0;
   const pm25 = sensordatavalues.find(v => v.value_type === 'P2') || sensordatavalues.find(v => v.value_type === 'P0');
   return pm25 ? parseFloat(pm25.value) : 0;
@@ -209,6 +212,10 @@ export const LAYER_STYLES: Record<string, LayerStyleConfig> = {
       const pm25 = getPM25Value(d.properties?.sensordatavalues);
       return getAirQualityColor(pm25);
     },
+    // getFillColor: (d: { properties?: { sensordatavalues?: Array<{ value_type: string; value: string }> } }) => {
+    //   const pm25 = getPM25Value(d.properties?.sensordatavalues);
+    //   return getAirQualityColor(pm25);
+    // },
     getRadius: 20, // Radius in meters
     pointRadiusMinPixels: 5,
     pointRadiusMaxPixels: 15,

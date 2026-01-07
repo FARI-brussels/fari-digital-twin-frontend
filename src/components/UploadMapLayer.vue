@@ -1,291 +1,3 @@
-<script setup lang="ts">
-/**
- * UploadMapLayer - Form to add WMS map layers
- * Fetches GetCapabilities to show available layers with checkboxes
- * Requires authentication to add layers
- */
-import { ref, computed, watch } from 'vue';
-import { useAuth } from '@/composables/useAuth';
-import { useAddMapLayerMutation, useMapLayersQuery } from '@/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import LoginPrompt from '@/components/LoginPrompt.vue';
-import { Layers, Plus, AlertCircle, CheckCircle2, Loader2, Search, Check } from 'lucide-vue-next';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface WMSLayer {
-  name: string;
-  title: string;
-  abstract: string;
-}
-
-// ============================================================================
-// Emits
-// ============================================================================
-
-const emit = defineEmits<{
-  uploaded: [];
-  cancel: [];
-}>();
-
-// ============================================================================
-// Auth
-// ============================================================================
-
-const { isAuthenticated, canWrite } = useAuth();
-
-// ============================================================================
-// State
-// ============================================================================
-
-const url = ref('');
-const availableLayers = ref<WMSLayer[]>([]);
-const selectedLayers = ref<string[]>([]);
-const searchQuery = ref('');
-const successMessage = ref('');
-const fetchError = ref('');
-const isFetching = ref(false);
-
-// ============================================================================
-// Mutation
-// ============================================================================
-
-const addLayerMutation = useAddMapLayerMutation();
-
-// Query existing layers to check for duplicates
-const { data: existingLayers } = useMapLayersQuery();
-
-const error = computed(() => {
-  if (addLayerMutation.error.value) {
-    return 'Failed to add map layers. Please check the details and try again.';
-  }
-  return null;
-});
-
-const submitting = computed(() => addLayerMutation.isPending.value);
-
-// ============================================================================
-// Computed
-// ============================================================================
-
-const filteredLayers = computed(() => {
-  if (!searchQuery.value) return availableLayers.value;
-  const query = searchQuery.value.toLowerCase();
-  return availableLayers.value.filter(
-    layer =>
-      layer.name.toLowerCase().includes(query) ||
-      layer.title.toLowerCase().includes(query) ||
-      layer.abstract.toLowerCase().includes(query)
-  );
-});
-
-const hasSelectedLayers = computed(() => selectedLayers.value.length > 0);
-
-const selectedCount = computed(() => selectedLayers.value.length);
-
-/**
- * Check if a layer is already added to the library
- */
-function isLayerAlreadyAdded(layerName: string): boolean {
-  if (!existingLayers.value) return false;
-  const baseUrl = url.value.split('?')[0];
-  return existingLayers.value.some(
-    existing => existing.url === baseUrl && existing.layer === layerName
-  );
-}
-
-/**
- * Get count of already added layers
- */
-const alreadyAddedCount = computed(() => {
-  if (!existingLayers.value || availableLayers.value.length === 0) return 0;
-  const baseUrl = url.value.split('?')[0];
-  return availableLayers.value.filter(layer =>
-    existingLayers.value!.some(
-      existing => existing.url === baseUrl && existing.layer === layer.name
-    )
-  ).length;
-});
-
-// ============================================================================
-// Methods
-// ============================================================================
-
-/**
- * Parse WMS GetCapabilities XML to extract layer information
- */
-function parseCapabilities(xmlText: string): WMSLayer[] {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-
-  const layers: WMSLayer[] = [];
-
-  // Handle both WMS 1.1.1 and 1.3.0 namespaces
-  const layerElements = xmlDoc.querySelectorAll('Layer > Layer');
-
-  layerElements.forEach(layerEl => {
-    const name = layerEl.querySelector('Name')?.textContent || '';
-    const title = layerEl.querySelector('Title')?.textContent || '';
-    const abstract = layerEl.querySelector('Abstract')?.textContent || '';
-
-    // Only include layers that have a name (queryable layers)
-    if (name) {
-      layers.push({ name, title, abstract });
-    }
-  });
-
-  return layers;
-}
-
-/**
- * Fetch GetCapabilities from the WMS server
- */
-async function fetchCapabilities(): Promise<void> {
-  if (!url.value) return;
-
-  // Reset state
-  availableLayers.value = [];
-  selectedLayers.value = [];
-  fetchError.value = '';
-  successMessage.value = '';
-  isFetching.value = true;
-
-  try {
-    // Build GetCapabilities URL
-    const baseUrl = url.value.split('?')[0];
-    const capabilitiesUrl = `${baseUrl}?service=WMS&request=GetCapabilities`;
-
-    const response = await fetch(capabilitiesUrl);
-
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-    }
-
-    const xmlText = await response.text();
-
-    // Check if it's valid XML
-    if (!xmlText.includes('WMS_Capabilities') && !xmlText.includes('WMT_MS_Capabilities')) {
-      throw new Error('Invalid WMS GetCapabilities response');
-    }
-
-    availableLayers.value = parseCapabilities(xmlText);
-
-    if (availableLayers.value.length === 0) {
-      fetchError.value = 'No layers found in this WMS service';
-    }
-  } catch (err) {
-    if (err instanceof TypeError && err.message.includes('fetch')) {
-      fetchError.value = 'Unable to connect to the WMS server. This may be due to CORS restrictions.';
-    } else {
-      fetchError.value = err instanceof Error ? err.message : 'Failed to fetch capabilities';
-    }
-  } finally {
-    isFetching.value = false;
-  }
-}
-
-/**
- * Toggle layer selection (only if not already added)
- */
-function toggleLayer(layerName: string): void {
-  // Don't allow selecting already added layers
-  if (isLayerAlreadyAdded(layerName)) return;
-
-  const index = selectedLayers.value.indexOf(layerName);
-  if (index > -1) {
-    selectedLayers.value.splice(index, 1);
-  } else {
-    selectedLayers.value.push(layerName);
-  }
-}
-
-/**
- * Check if a layer is selected
- */
-function isLayerSelected(layerName: string): boolean {
-  return selectedLayers.value.includes(layerName);
-}
-
-/**
- * Select all visible layers (excluding already added ones)
- */
-function selectAll(): void {
-  filteredLayers.value.forEach(layer => {
-    if (!isLayerAlreadyAdded(layer.name) && !isLayerSelected(layer.name)) {
-      selectedLayers.value.push(layer.name);
-    }
-  });
-}
-
-/**
- * Deselect all layers
- */
-function deselectAll(): void {
-  selectedLayers.value = [];
-}
-
-/**
- * Add selected layers to the database
- */
-async function addSelectedLayers(): Promise<void> {
-  if (!canWrite.value || !hasSelectedLayers.value) return;
-
-  successMessage.value = '';
-  addLayerMutation.reset();
-
-  try {
-    const baseUrl = url.value.split('?')[0] ?? '';
-
-    // Add each selected layer
-    for (const layerName of selectedLayers.value) {
-      const layer = availableLayers.value.find(l => l.name === layerName);
-      await addLayerMutation.mutateAsync({
-        url: baseUrl,
-        layer: layerName,
-        description: layer?.title ?? layer?.abstract ?? layerName,
-      });
-    }
-
-    successMessage.value = `Successfully added ${selectedLayers.value.length} layer(s)!`;
-
-    // Reset form after success
-    setTimeout(() => {
-      url.value = '';
-      availableLayers.value = [];
-      selectedLayers.value = [];
-      emit('uploaded');
-    }, 1500);
-  } catch {
-    // Error is handled by the mutation
-  }
-}
-
-function handleCancel(): void {
-  emit('cancel');
-}
-
-// Reset layers when URL changes significantly
-watch(url, (newUrl, oldUrl) => {
-  if (newUrl && oldUrl) {
-    const newBase = newUrl.split('?')[0];
-    const oldBase = oldUrl.split('?')[0];
-    if (newBase !== oldBase) {
-      availableLayers.value = [];
-      selectedLayers.value = [];
-      fetchError.value = '';
-    }
-  }
-});
-</script>
-
 <template>
   <div class="w-full">
     <!-- Auth check -->
@@ -296,9 +8,7 @@ watch(url, (newUrl, oldUrl) => {
       description="Create an account or sign in to add WMS map layers to the library."
     />
 
-    <!-- Add layer form (authenticated) -->
     <div v-else>
-      <!-- Header -->
       <div class="flex items-center gap-3 mb-2">
         <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
           <Layers class="h-5 w-5 text-accent" />
@@ -466,3 +176,222 @@ watch(url, (newUrl, oldUrl) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { useAuth } from '@/composables/useAuth';
+import { useAddMapLayerMutation, useMapLayersQuery } from '@/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import LoginPrompt from '@/components/LoginPrompt.vue';
+import { Layers, Plus, AlertCircle, CheckCircle2, Loader2, Search, Check } from 'lucide-vue-next';
+
+interface WMSLayer {
+  name: string;
+  title: string;
+  abstract: string;
+}
+
+const emit = defineEmits<{
+  uploaded: [];
+  cancel: [];
+}>();
+
+
+const { isAuthenticated, canWrite } = useAuth();
+
+const url = ref('');
+const availableLayers = ref<WMSLayer[]>([]);
+const selectedLayers = ref<string[]>([]);
+const searchQuery = ref('');
+const successMessage = ref('');
+const fetchError = ref('');
+const isFetching = ref(false);
+
+const addLayerMutation = useAddMapLayerMutation();
+
+const { data: existingLayers } = useMapLayersQuery();
+
+const error = computed(() => {
+  if (addLayerMutation.error.value) {
+    return 'Failed to add map layers. Please check the details and try again.';
+  }
+  return null;
+});
+
+const submitting = computed(() => addLayerMutation.isPending.value);
+
+const filteredLayers = computed(() => {
+  if (!searchQuery.value) return availableLayers.value;
+  const query = searchQuery.value.toLowerCase();
+  return availableLayers.value.filter(
+    layer =>
+      layer.name.toLowerCase().includes(query) ||
+      layer.title.toLowerCase().includes(query) ||
+      layer.abstract.toLowerCase().includes(query)
+  );
+});
+
+const hasSelectedLayers = computed(() => selectedLayers.value.length > 0);
+
+const selectedCount = computed(() => selectedLayers.value.length);
+
+const alreadyAddedCount = computed(() => {
+  if (!existingLayers.value || availableLayers.value.length === 0) return 0;
+  const baseUrl = url.value.split('?')[0];
+  return availableLayers.value.filter(layer =>
+    existingLayers.value!.some(
+      existing => existing.url === baseUrl && existing.layer === layer.name
+    )
+  ).length;
+});
+
+function parseCapabilities(xmlText: string): WMSLayer[] {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+  const layers: WMSLayer[] = [];
+  const layerElements = xmlDoc.querySelectorAll('Layer > Layer');
+
+  layerElements.forEach(layerEl => {
+    const name = layerEl.querySelector('Name')?.textContent || '';
+    const title = layerEl.querySelector('Title')?.textContent || '';
+    const abstract = layerEl.querySelector('Abstract')?.textContent || '';
+
+    if (name) layers.push({ name, title, abstract });
+    
+  });
+
+  return layers;
+}
+
+async function fetchCapabilities(): Promise<void> {
+  if (!url.value) return;
+
+  availableLayers.value = [];
+  selectedLayers.value = [];
+  fetchError.value = '';
+  successMessage.value = '';
+  isFetching.value = true;
+
+  try {
+    const baseUrl = url.value.split('?')[0];
+    const capabilitiesUrl = `${baseUrl}?service=WMS&request=GetCapabilities`;
+
+    const response = await fetch(capabilitiesUrl);
+
+    if (!response.ok)
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    
+
+    const xmlText = await response.text();
+
+    if (!xmlText.includes('WMS_Capabilities') && !xmlText.includes('WMT_MS_Capabilities'))
+      throw new Error('Invalid WMS GetCapabilities response');
+    
+
+    availableLayers.value = parseCapabilities(xmlText);
+
+    if (availableLayers.value.length === 0) 
+      fetchError.value = 'No layers found in this WMS service';
+    
+  } catch (err) {
+
+    if (err instanceof TypeError && err.message.includes('fetch')) 
+      fetchError.value = 'Unable to connect to the WMS server. This may be due to CORS restrictions.';
+    else 
+      fetchError.value = err instanceof Error ? err.message : 'Failed to fetch capabilities';
+
+  } finally {
+    isFetching.value = false;
+  }
+}
+
+function toggleLayer(layerName: string): void {
+  if (isLayerAlreadyAdded(layerName)) return;
+
+  const index = selectedLayers.value.indexOf(layerName);
+  if (index > -1) selectedLayers.value.splice(index, 1);
+  else selectedLayers.value.push(layerName);
+
+}
+
+function isLayerAlreadyAdded(layerName: string): boolean {
+  if (!existingLayers.value) return false;
+  const baseUrl = url.value.split('?')[0];
+  return existingLayers.value.some(
+    existing => existing.url === baseUrl && existing.layer === layerName
+  );
+}
+
+function isLayerSelected(layerName: string): boolean {
+  return selectedLayers.value.includes(layerName);
+}
+
+function selectAll(): void {
+  filteredLayers.value.forEach(layer => {
+    if (!isLayerAlreadyAdded(layer.name) && !isLayerSelected(layer.name)) {
+      selectedLayers.value.push(layer.name);
+    }
+  });
+}
+
+function deselectAll(): void {
+  selectedLayers.value = [];
+}
+
+async function addSelectedLayers(): Promise<void> {
+  if (!canWrite.value || !hasSelectedLayers.value) return;
+
+  successMessage.value = '';
+  addLayerMutation.reset();
+
+  try {
+    const baseUrl = url.value.split('?')[0] ?? '';
+
+    for (const layerName of selectedLayers.value) {
+      const layer = availableLayers.value.find(l => l.name === layerName);
+      await addLayerMutation.mutateAsync({
+        url: baseUrl,
+        layer: layerName,
+        description: layer?.title ?? layer?.abstract ?? layerName,
+      });
+    }
+
+    successMessage.value = `Successfully added ${selectedLayers.value.length} layer(s)!`;
+
+    setTimeout(() => {
+      url.value = '';
+      availableLayers.value = [];
+      selectedLayers.value = [];
+      emit('uploaded');
+    }, 1500);
+  } catch {
+    // Error is handled by the mutation, but logging for debugging
+    console.error('Error adding layers:', error);
+  }
+}
+
+function handleCancel(): void {
+  emit('cancel');
+}
+
+watch(url, (newUrl, oldUrl) => {
+  if (newUrl && oldUrl) {
+    const newBase = newUrl.split('?')[0];
+    const oldBase = oldUrl.split('?')[0];
+    if (newBase !== oldBase) {
+      availableLayers.value = [];
+      selectedLayers.value = [];
+      fetchError.value = '';
+    }
+  }
+});
+</script>
+
+

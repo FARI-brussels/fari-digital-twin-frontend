@@ -66,14 +66,14 @@ const uploading = computed(() => uploadMutation.isPending.value);
 // Methods
 // ============================================================================
 
-function handleFileChange(event: Event): void {
+function handleFileChange(event: globalThis.Event): void {
   const target = event.target as HTMLInputElement;
   file.value = target.files?.[0] ?? null;
   successMessage.value = '';
   uploadMutation.reset();
 }
 
-function handleDrop(event: DragEvent): void {
+function handleDrop(event: globalThis.DragEvent): void {
   isDragging.value = false;
   const droppedFile = event.dataTransfer?.files?.[0];
   if (droppedFile && droppedFile.name.endsWith('.zip')) {
@@ -83,7 +83,7 @@ function handleDrop(event: DragEvent): void {
   }
 }
 
-function handleDragOver(event: DragEvent): void {
+function handleDragOver(event: globalThis.DragEvent): void {
   event.preventDefault();
   isDragging.value = true;
 }

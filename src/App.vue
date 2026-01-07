@@ -4,8 +4,6 @@ import Layout from '@/components/Layout.vue';
 
 <template>
   <Layout>
-    <main class="w-full">
-      <RouterView />
-    </main>
+    <RouterView />
   </Layout>
 </template>

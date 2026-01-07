@@ -3,12 +3,14 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import vue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
+import globals from 'globals';
 
 export default [
   eslint.configs.recommended,
   {
     files: ['src/**/*.{ts,tsx,vue}'],
     languageOptions: {
+
       parser: vueParser,
       parserOptions: {
         parser: tsparser,
@@ -17,6 +19,7 @@ export default [
         extraFileExtensions: ['.vue'],
       },
       globals: {
+        ...globals.browser,
         window: 'readonly',
         document: 'readonly',
         console: 'readonly',
@@ -34,6 +37,8 @@ export default [
         Blob: 'readonly',
         URL: 'readonly',
         Buffer: 'readonly',
+        sessionStorage: 'readonly',
+        navigator: 'readonly',
       },
     },
     plugins: {

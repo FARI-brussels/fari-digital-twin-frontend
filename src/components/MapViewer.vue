@@ -1,143 +1,134 @@
+<template>
+  <div ref="wrapperRef" class="relative w-full h-full bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden">
+    <div ref="containerRef" class="absolute inset-0" />
+
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-300"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="loading || !ready"
+        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50 z-20"
+      >
+        <div class="text-center">
+          <div class="mx-auto mb-4 h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center shadow-lg shadow-blue-500/10">
+            <Loader2 class="h-6 w-6 text-blue-500 animate-spin" />
+          </div>
+          <p class="text-slate-700 font-medium">Loading map layer...</p>
+        </div>
+      </div>
+    </Transition>
+
+    <div class="absolute bottom-20 right-4 z-10 pointer-events-auto">
+      <MapLegend 
+        :image-src="legendUrl"
+        :show-icon="true"
+      />
+    </div>
+
+    <ViewerControls
+      :show-rotation="true"
+      :show-reset="true"
+      :show-fullscreen="true"
+      :show-corners="true"
+      :fullscreen-target="wrapperRef"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @rotate-left="() => rotateLeft(30)"
+      @rotate-right="() => rotateRight(30)"
+      @reset="resetView"
+    />
+  </div>
+</template>
+
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
-import * as Cesium from 'cesium';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { computed, watch, onMounted, onBeforeUnmount, ref } from 'vue';
+import { useCesiumViewer } from '@/composables/cesium';
+import { ViewerControls } from '@/components/ui/viewer-controls';
+import { MapLegend } from '@/components/ui/map-legend';
+import { Loader2 } from 'lucide-vue-next';
 import type { MapLayer } from '@/types';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Map } from 'lucide-vue-next';
+import type {  ImageryLayer } from 'cesium'
 
-// ============================================================================
-// Props Definition
-// ============================================================================
 
-interface Props {
-  mapLayer: MapLayer;
-}
+const props = defineProps<{ mapLayer: MapLayer | null }>();
 
-const props = defineProps<Props>();
+const wrapperRef = ref<HTMLDivElement | null>(null);
+const containerRef = ref<HTMLDivElement | null>(null);
 
-// ============================================================================
-// State
-// ============================================================================
-
-const cesiumContainer = ref<HTMLDivElement | null>(null);
-
-let viewer: Cesium.Viewer | null = null;
-let currentImageryLayer: Cesium.ImageryLayer | null = null;
-
-// ============================================================================
-// Computed
-// ============================================================================
-
-const legendUrl = computed<string>(() => {
-  const layerInfo = props.mapLayer;
-  if (layerInfo?.url && layerInfo.layer) {
-    const baseUrl = layerInfo.url.split('?')[0];
-    return `${baseUrl}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=${layerInfo.layer}`;
-  }
-  return '';
+const {
+  viewer,
+  ready,
+  loading,
+  addWMSLayer,
+  removeWMSLayer,
+  zoomIn,
+  zoomOut,
+  rotateLeft,
+  rotateRight,
+  resetView,
+  configureControls,
+} = useCesiumViewer({
+  container: containerRef,
+  initialViewState: {
+    longitude: 4.3517,
+    latitude: 50.8503,
+    altitude: 4000,
+    pitch: -45,
+    bearing: 0,
+  },
 });
 
-// ============================================================================
-// Methods
-// ============================================================================
+let currentLayer: ImageryLayer | null = null;
 
-function initializeViewer(): void {
-  if (cesiumContainer.value && !viewer) {
-    viewer = new Cesium.Viewer(cesiumContainer.value, {
-      sceneMode: Cesium.SceneMode.SCENE2D,
-      baseLayerPicker: false,
-      timeline: false,
-      animation: false,
-      geocoder: false,
-      homeButton: false,
-      sceneModePicker: false,
-      navigationHelpButton: false,
-    });
+const legendUrl = computed(() => {
+  const l = props.mapLayer;
+  if (!l?.url || !l.layer) return '';
+  const base = l.url.split('?')[0];
+  const layerHash = encodeURIComponent(l.layer).replace(/%/g, '');
+  return `${base}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=${encodeURIComponent(l.layer)}&v=${layerHash}`;
+});
 
-    // Add OpenStreetMap imagery layer
-    viewer.imageryLayers.addImageryProvider(
-      new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/',
-      })
-    );
-    viewer.camera.setView({
-      destination: Cesium.Rectangle.fromDegrees(4.25, 50.75, 4.45, 50.95),
-    });
-  }
-}
-
-function updateMapLayer(newMapLayer: MapLayer): void {
-  if (viewer && newMapLayer?.url && newMapLayer.layer) {
-    if (currentImageryLayer) {
-      viewer.imageryLayers.remove(currentImageryLayer, false);
+onMounted(() => {
+  watch(ready, (isReady) => {
+    if (isReady) {
+      configureControls({
+        enableRotate: true,
+        enableZoom: true,
+        enableTilt: true,
+        enableLook: true,
+      });
     }
-
-    currentImageryLayer = viewer.imageryLayers.addImageryProvider(
-      new Cesium.WebMapServiceImageryProvider({
-        url: newMapLayer.url,
-        layers: newMapLayer.layer,
-        parameters: {
-          service: 'WMS',
-          transparent: true,
-          format: 'image/png',
-        },
-      })
-    );
-  }
-}
-
-// ============================================================================
-// Watchers
-// ============================================================================
+  }, { immediate: true });
+});
 
 watch(
   () => props.mapLayer,
-  (newMapLayer: MapLayer) => {
-    updateMapLayer(newMapLayer);
+  async (newLayer) => {
+    if (currentLayer) {
+      removeWMSLayer(currentLayer);
+      currentLayer = null;
+    }
+
+    if (newLayer?.url && newLayer.layer && viewer.value) {
+      try {
+        currentLayer = addWMSLayer(newLayer.url, newLayer.layer, {
+          opacity: 0.9,
+          parameters: {
+            transparent: true,
+            format: 'image/png',
+          },
+        });
+        viewer.value.scene.requestRender();
+      } catch (err) {
+        console.error('Failed to add WMS layer:', err);
+      }
+    }
   },
   { immediate: true }
 );
 
-// ============================================================================
-// Lifecycle
-// ============================================================================
-
-onMounted(() => {
-  initializeViewer();
-  updateMapLayer(props.mapLayer);
-});
-
-onBeforeUnmount(() => {
-  if (viewer) {
-    viewer.destroy();
-    viewer = null;
-  }
-});
+onBeforeUnmount(() => currentLayer && removeWMSLayer(currentLayer));
 </script>
-
-<template>
-  <div class="w-full h-full relative bg-black">
-    <div ref="cesiumContainer" class="w-full h-full"></div>
-
-    <!-- Legend Card -->
-    <Card
-      v-if="legendUrl"
-      class="absolute bottom-4 right-4 z-[1005] shadow-lg py-2 gap-1 bg-background/95 backdrop-blur-sm"
-    >
-      <CardHeader class="py-0 px-3">
-        <div class="flex items-center gap-2">
-          <Map class="w-3.5 h-3.5 text-muted-foreground" />
-          <CardTitle class="text-xs font-medium">Legend</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent class="px-3 py-0 pt-1">
-        <img
-          :src="legendUrl"
-          alt="Map Legend"
-          class="max-w-[180px] max-h-[250px] block rounded"
-        />
-      </CardContent>
-    </Card>
-  </div>
-</template>

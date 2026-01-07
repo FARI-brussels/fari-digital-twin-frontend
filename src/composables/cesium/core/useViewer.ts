@@ -9,7 +9,9 @@ import {
   RequestScheduler,
   Math as CesiumMath,
   Cartesian3,
-  ShadowMode
+  ShadowMode,
+  CesiumTerrainProvider,
+  IonResource
 } from 'cesium'
 import type { CesiumViewerOptions, CesiumViewState } from '@/types/Cesium'
 import { useCesiumAssetCache } from '@/stores/cesiumAssetCache'
@@ -23,11 +25,15 @@ const DEFAULT_VIEW_STATE: CesiumViewState = {
   bearing: 0,
 }
 
+const DEFAULT_CUSTOM_TERRAIN_ASSET_ID = 3340034
+
 export function useViewer(options: CesiumViewerOptions) {
   const {
     container,
     initialViewState = {},
-    enableTerrain = false,
+    enableCesiumTerrain = false,
+    enableCustomTerrain = false,
+    customTerrainAssetId = DEFAULT_CUSTOM_TERRAIN_ASSET_ID,
     enableOSMBuildings = false,
   } = options
 
@@ -84,8 +90,13 @@ export function useViewer(options: CesiumViewerOptions) {
       viewer.value.imageryLayers.removeAll()
       viewer.value.imageryLayers.addImageryProvider(osm)
 
-      if (enableTerrain) {
+      if (enableCesiumTerrain) {
         const terrain = await createWorldTerrainAsync()
+        viewer.value.terrainProvider = terrain
+        viewer.value.scene.globe.depthTestAgainstTerrain = true
+      } else if (enableCustomTerrain) {
+        const terrainResource = await IonResource.fromAssetId(customTerrainAssetId)
+        const terrain = await CesiumTerrainProvider.fromUrl(terrainResource)
         viewer.value.terrainProvider = terrain
         viewer.value.scene.globe.depthTestAgainstTerrain = true
       }

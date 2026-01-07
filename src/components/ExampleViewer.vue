@@ -224,7 +224,7 @@ const {
     pitch: -40,
     bearing: 0,
   },
-  enableTerrain: true,
+  enableCustomTerrain: true,
 });
 
 const activeLayers = computed<ExampleLayer[]>(() =>

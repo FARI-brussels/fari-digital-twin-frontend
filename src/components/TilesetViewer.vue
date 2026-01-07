@@ -111,7 +111,7 @@ const {
     pitch: -32,
     bearing: 0,
   },
-  enableTerrain: true,
+  enableCustomTerrain: true,
 });
 
 const showWmsLayer = ref(true);
